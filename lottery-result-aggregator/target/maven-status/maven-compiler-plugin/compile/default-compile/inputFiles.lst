@@ -1,0 +1,11 @@
+C:\Users\brizt\Desktop\Lotto Options Workspace\lottery-result-persistence-service\lottery-result-aggregator\src\main\java\com\floyd\lottoptions\agr\model\LotteryDraw.java
+C:\Users\brizt\Desktop\Lotto Options Workspace\lottery-result-persistence-service\lottery-result-aggregator\src\main\java\com\floyd\lottoptions\agr\service\impl\LotteryResultPollingService.java
+C:\Users\brizt\Desktop\Lotto Options Workspace\lottery-result-persistence-service\lottery-result-aggregator\src\main\java\com\floyd\lottoptions\agr\service\PollingService.java
+C:\Users\brizt\Desktop\Lotto Options Workspace\lottery-result-persistence-service\lottery-result-aggregator\src\main\java\com\floyd\lottoptions\agr\model\LotteryState.java
+C:\Users\brizt\Desktop\Lotto Options Workspace\lottery-result-persistence-service\lottery-result-aggregator\src\main\java\com\floyd\lottoptions\agr\model\Prizes.java
+C:\Users\brizt\Desktop\Lotto Options Workspace\lottery-result-persistence-service\lottery-result-aggregator\src\main\java\com\floyd\lottoptions\agr\model\Values.java
+C:\Users\brizt\Desktop\Lotto Options Workspace\lottery-result-persistence-service\lottery-result-aggregator\src\main\java\com\floyd\lottoptions\agr\model\LotteryGame.java
+C:\Users\brizt\Desktop\Lotto Options Workspace\lottery-result-persistence-service\lottery-result-aggregator\src\main\java\com\floyd\lottoptions\agr\config\MongoConfig.java
+C:\Users\brizt\Desktop\Lotto Options Workspace\lottery-result-persistence-service\lottery-result-aggregator\src\main\java\com\floyd\lottoptions\agr\config\LotteryRegionConfig.java
+C:\Users\brizt\Desktop\Lotto Options Workspace\lottery-result-persistence-service\lottery-result-aggregator\src\main\java\com\floyd\lottoptions\agr\repository\LotteryStateRepository.java
+C:\Users\brizt\Desktop\Lotto Options Workspace\lottery-result-persistence-service\lottery-result-aggregator\src\main\java\com\floyd\lottoptions\agr\task\ResultAggregator.java
