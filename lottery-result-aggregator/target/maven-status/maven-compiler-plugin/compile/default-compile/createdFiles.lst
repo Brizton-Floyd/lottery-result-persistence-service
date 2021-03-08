@@ -1,11 +1,7 @@
-com\floyd\lottoptions\agr\model\Prizes.class
+com\floyd\lottoptions\agr\config\ApplicationConfig.class
 com\floyd\lottoptions\agr\task\ResultAggregator.class
 com\floyd\lottoptions\agr\config\LotteryRegionConfig.class
-com\floyd\lottoptions\agr\model\LotteryState.class
-com\floyd\lottoptions\agr\model\LotteryGame.class
-com\floyd\lottoptions\agr\model\Values.class
 com\floyd\lottoptions\agr\repository\LotteryStateRepository.class
-com\floyd\lottoptions\agr\model\LotteryDraw.class
 com\floyd\lottoptions\agr\config\MongoConfig.class
 com\floyd\lottoptions\agr\service\PollingService.class
 com\floyd\lottoptions\agr\service\impl\LotteryResultPollingService.class

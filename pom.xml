@@ -5,6 +5,7 @@
     <modules>
         <module>lottery-result-persistence-server</module>
         <module>lottery-result-aggregator</module>
+        <module>lottery-result-persistence-service-models</module>
     </modules>
     <parent>
 		<groupId>org.springframework.boot</groupId>
@@ -22,10 +23,16 @@
 		<java.version>1.8</java.version>
 	</properties>
 	<dependencies>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-rsocket</artifactId>
-		</dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <scope>runtime</scope>
+            <optional>true</optional>
+        </dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>

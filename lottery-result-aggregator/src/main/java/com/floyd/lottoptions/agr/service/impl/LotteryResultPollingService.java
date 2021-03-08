@@ -6,13 +6,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.floyd.lottoptions.agr.config.LotteryRegionConfig;
 import com.floyd.lottoptions.agr.config.MongoConfig;
-import com.floyd.lottoptions.agr.model.LotteryDraw;
-import com.floyd.lottoptions.agr.model.LotteryGame;
-import com.floyd.lottoptions.agr.model.LotteryState;
 import com.floyd.lottoptions.agr.repository.LotteryStateRepository;
 import com.floyd.lottoptions.agr.service.PollingService;
 import io.github.resilience4j.ratelimiter.RateLimiter;
 import io.github.resilience4j.reactor.ratelimiter.operator.RateLimiterOperator;
+import model.LotteryDraw;
+import model.LotteryGame;
+import model.LotteryState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,6 +29,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -129,13 +130,17 @@ public class LotteryResultPollingService implements PollingService {
                 String mostRecentDateInDb = currentDrawData.get(0).getResults().getAsOfDate();
                 String mostRecentDateFromApi = lotteryDraws[0].getResults().getAsOfDate();
                 if (mostRecentDateInDb.equals(mostRecentDateFromApi)) {
-                    log.info(String.format("There is no new draw information for %s", lotteryGame.getFullName()));
+                    log.info(String.format("No game updates needed for %s", lotteryGame.getFullName()));
                     return;
                 } else {
-                    log.info(String.format("Inserting new draw for %s", lotteryGame.getFullName()));
-                    currentDrawData.set(0, lotteryDraws[0]);
+                    List<LotteryDraw> gamesNeedingInsert = getGamesNeedingInsert(mostRecentDateInDb, lotteryDraws);
+                    String postFix = (gamesNeedingInsert.size() == 1) ? "Draw" : "Draws";
+                    log.info(String.format("Inserting %d %s for lotto game: %s",gamesNeedingInsert.size(), postFix, lotteryGame.getFullName()));
+
+                    for (int i = gamesNeedingInsert.size() - 1; i >= 0; i--) {
+                        currentDrawData.add(0, gamesNeedingInsert.get(i));
+                    }
                 }
-                
             }else {
                 currentDrawData.addAll(Arrays.asList(lotteryDraws));
             }
@@ -151,7 +156,21 @@ public class LotteryResultPollingService implements PollingService {
         }
     }
 
-    
+    private List<LotteryDraw> getGamesNeedingInsert(String mostRecentDateInDb,
+                                                    LotteryDraw[] lotteryDraws) {
+        LinkedList<LotteryDraw> gamesNeedingInsert = new LinkedList<>();
+        for (int i = 0; i < lotteryDraws.length; i++) {
+            if (!lotteryDraws[i].getResults().getAsOfDate().equals(mostRecentDateInDb)) {
+                gamesNeedingInsert.addLast(lotteryDraws[i]);
+            }else {
+                break;
+            }
+        }
+
+        return gamesNeedingInsert;
+    }
+
+
     /**
      * @param jsonResponse
      * @param region

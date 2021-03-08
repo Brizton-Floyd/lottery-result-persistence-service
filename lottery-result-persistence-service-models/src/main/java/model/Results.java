@@ -1,11 +1,11 @@
-package com.floyd.lottoptions.agr.model;
+package model;
 
 import lombok.Data;
 
 import java.util.List;
 
 @Data
-public class Prizes {
+public class Results {
     private String asOfDate;
     private List<Values> values;
 }

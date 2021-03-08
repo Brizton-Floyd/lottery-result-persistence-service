@@ -1,4 +1,4 @@
-package com.floyd.lottoptions.agr.model;
+package model;
 
 import lombok.Data;
 

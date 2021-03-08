@@ -1,0 +1,8 @@
+model\Results.class
+model\LotteryGame.class
+model\Values.class
+model\Prizes.class
+model\request\StateGamesRequest.class
+model\response\StateGamesResponse.class
+model\LotteryDraw.class
+model\LotteryState.class

@@ -1,7 +1,6 @@
 package com.floyd.lottoptions.server;
 
 import com.floyd.lottoptions.agr.config.LotteryRegionConfig;
-import com.floyd.lottoptions.agr.model.LotteryState;
 import com.floyd.lottoptions.agr.repository.LotteryStateRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
