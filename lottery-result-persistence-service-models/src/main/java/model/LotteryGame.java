@@ -17,5 +17,6 @@ public class LotteryGame {
     private String officialUrl;
     private String nextGameDate;
     private String lastGameDate;
+    private String drawHistoryCount;
     List<LotteryDraw> lotteryDraws;
 }

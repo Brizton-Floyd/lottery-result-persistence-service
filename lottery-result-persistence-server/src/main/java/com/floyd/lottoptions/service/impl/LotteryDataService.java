@@ -35,17 +35,14 @@ public class LotteryDataService implements DataService {
             final List<LotteryGame> stateLotteryGames = lotteryState.get().getStateLotteryGames();
             List<LotteryGame> lotteryGames = new ArrayList<>();
             for (LotteryGame lotteryGame : stateLotteryGames) {
-                LotteryGame game = lotteryGame;
-                if (idx++ == 0) {
-                    lotteryGames.add(game);
-                } else {
-                    game.setLotteryDraws(new ArrayList<>());
-                    lotteryGames.add(game);
+                if (idx++ != 0) {
+                    lotteryGame.setLotteryDraws(new ArrayList<>());
                 }
+                lotteryGames.add(lotteryGame);
             }
             stateGamesResponse = new StateGamesResponse();
             stateGamesResponse.setLotteryGames(lotteryGames);
         }
-        return Optional.of(stateGamesResponse);
+        return Optional.ofNullable(stateGamesResponse);
     }
 }

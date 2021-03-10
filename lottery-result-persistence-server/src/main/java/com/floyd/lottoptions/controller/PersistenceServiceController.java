@@ -28,17 +28,16 @@ public class PersistenceServiceController {
     }
 
     @PostMapping("/state/games")
-    StateGamesResponse requestResponse(@Validated @RequestBody StateGamesRequest request) {
+    ResponseEntity<StateGamesResponse> requestResponse(@Validated @RequestBody StateGamesRequest request) {
         log.info("Received request: {}", request);
         try {
             final Optional<StateGamesResponse> stateData = lotteryDataService.getStateData(request);
             if (stateData.isPresent()) {
-                return stateData.get();
+                return new ResponseEntity<>(stateData.get(), HttpStatus.OK);
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return new StateGamesResponse();
+        return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
     }
 }

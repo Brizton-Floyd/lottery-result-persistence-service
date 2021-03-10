@@ -8,6 +8,7 @@ import com.floyd.lottoptions.agr.config.LotteryRegionConfig;
 import com.floyd.lottoptions.agr.config.MongoConfig;
 import com.floyd.lottoptions.agr.repository.LotteryStateRepository;
 import com.floyd.lottoptions.agr.service.PollingService;
+import com.sun.scenario.effect.impl.sw.sse.SSEBlend_SRC_OUTPeer;
 import io.github.resilience4j.ratelimiter.RateLimiter;
 import io.github.resilience4j.reactor.ratelimiter.operator.RateLimiterOperator;
 import model.LotteryDraw;
@@ -43,7 +44,6 @@ public class LotteryResultPollingService implements PollingService {
     private final LotteryRegionConfig lotteryRegionConfig;
     private final LotteryStateRepository lotteryStateRepository;
     private final WebClient webClient;
-    private final RateLimiter rateLimiter;
     private final MongoConfig mongoConfig;
     @Value("${state.games.api.host}")
     private String host;
@@ -55,13 +55,11 @@ public class LotteryResultPollingService implements PollingService {
     public LotteryResultPollingService(LotteryRegionConfig lotteryRegionConfig,
                                        LotteryStateRepository lotteryStateRepository,
                                        MongoConfig mongoConfig,
-                                       WebClient webClient,
-                                       RateLimiter rateLimiter) {
+                                       WebClient webClient) {
         this.lotteryRegionConfig = lotteryRegionConfig;
         this.lotteryStateRepository = lotteryStateRepository;
         this.mongoConfig = mongoConfig;
         this.webClient = webClient;
-        this.rateLimiter = rateLimiter;
     }
 
     @Override
@@ -80,7 +78,6 @@ public class LotteryResultPollingService implements PollingService {
                     if (lotteryGame.getLotteryDraws() == null) {
                         lotteryGame.setLotteryDraws(new ArrayList<>());
                     }
-                    
                     int last = (lotteryGame.getLotteryDraws().size() > 1) ? 1 : 1000;
                     String queryString = populateQueryString(lotteryGame, last, region);
                     String data = webClient.post()
@@ -119,11 +116,23 @@ public class LotteryResultPollingService implements PollingService {
         try {
             ObjectMapper mapper = new ObjectMapper()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
             JsonNode node = mapper.readTree(data);
+            JsonNode gameInformationNode = node.at("/data/game");
+            String lastGameDate = gameInformationNode.get("lastGameDate").toString();
+            String nextGameDate = gameInformationNode.get("nextGameDate").toString();
+
             JsonNode drawNode = node.at("/data/game/draws");
             LotteryDraw[] lotteryDraws = mapper.treeToValue(drawNode, LotteryDraw[].class);
 
+            lotteryGame.setNextGameDate(nextGameDate);
+            lotteryGame.setLastGameDate(lastGameDate);
+
             List<LotteryDraw> currentDrawData = lotteryGame.getLotteryDraws();
+            lotteryGame.setDrawHistoryCount(Integer.toString(currentDrawData.size()));
+            if (currentDrawData.size() > 2000) {
+                currentDrawData.remove(currentDrawData.size() - 1);
+            }
             
             if (currentDrawData.size() > 1) {
                 // TODO: add only most recent element in the lotteryDrawsArray
@@ -131,12 +140,12 @@ public class LotteryResultPollingService implements PollingService {
                 String mostRecentDateFromApi = lotteryDraws[0].getResults().getAsOfDate();
                 if (mostRecentDateInDb.equals(mostRecentDateFromApi)) {
                     log.info(String.format("No game updates needed for %s", lotteryGame.getFullName()));
-                    return;
+                    //return;
                 } else {
                     List<LotteryDraw> gamesNeedingInsert = getGamesNeedingInsert(mostRecentDateInDb, lotteryDraws);
                     String postFix = (gamesNeedingInsert.size() == 1) ? "Draw" : "Draws";
-                    log.info(String.format("Inserting %d %s for lotto game: %s",gamesNeedingInsert.size(), postFix, lotteryGame.getFullName()));
-
+                    log.info(String.format("Inserting %d %s for lotto game: %s",gamesNeedingInsert.size(), postFix,
+                            lotteryGame.getFullName()));
                     for (int i = gamesNeedingInsert.size() - 1; i >= 0; i--) {
                         currentDrawData.add(0, gamesNeedingInsert.get(i));
                     }
