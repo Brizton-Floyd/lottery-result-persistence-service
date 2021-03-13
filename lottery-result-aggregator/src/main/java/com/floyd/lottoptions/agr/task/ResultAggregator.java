@@ -32,7 +32,7 @@ public class ResultAggregator {
         }
     }
 
-    @Scheduled(cron = "0 * */4 * * *")
+    @Scheduled(cron = "0 0 */4 * * ?")
     public void performDrawResultUpdates() {
         log.info("Aggregating US Lottery Results Draw Results{}", dateFormat.format(new Date()));
         try {

@@ -3,14 +3,10 @@ package com.floyd.lottoptions.agr.service.impl;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.floyd.lottoptions.agr.config.LotteryRegionConfig;
 import com.floyd.lottoptions.agr.config.MongoConfig;
 import com.floyd.lottoptions.agr.repository.LotteryStateRepository;
 import com.floyd.lottoptions.agr.service.PollingService;
-import com.sun.scenario.effect.impl.sw.sse.SSEBlend_SRC_OUTPeer;
-import io.github.resilience4j.ratelimiter.RateLimiter;
-import io.github.resilience4j.reactor.ratelimiter.operator.RateLimiterOperator;
 import model.LotteryDraw;
 import model.LotteryGame;
 import model.LotteryState;
@@ -72,8 +68,8 @@ public class LotteryResultPollingService implements PollingService {
             if (lotteryState != null) {
                 List<LotteryGame> nonCardLotteryGames =
                         lotteryState.getStateLotteryGames().stream()
-                        .filter(game -> !game.getType().contains("CARD"))
-                        .collect(Collectors.toList());
+                                .filter(game -> !game.getType().contains("CARD"))
+                                .collect(Collectors.toList());
                 for (LotteryGame lotteryGame : nonCardLotteryGames) {
                     if (lotteryGame.getLotteryDraws() == null) {
                         lotteryGame.setLotteryDraws(new ArrayList<>());
@@ -94,7 +90,7 @@ public class LotteryResultPollingService implements PollingService {
         }
         log.info("Concluded updating of state lotteries");
     }
-    
+
     @Override
     public void pollForUpdatesToStateGames() throws Exception {
         for (String region : lotteryRegionConfig.getRegions()) {
@@ -107,12 +103,12 @@ public class LotteryResultPollingService implements PollingService {
     }
 
     /**
-     *  @param data
+     * @param data
      * @param lotteryGame
      * @param lotteryState
      */
     private void updateStateLotteryGame(String data, LotteryGame lotteryGame, LotteryState lotteryState) {
-        log.info(format("Performing game update for %s in region %s",lotteryGame.getFullName(), lotteryState.getStateRegion()));
+        log.info(format("Performing game update for %s in region %s", lotteryGame.getFullName(), lotteryState.getStateRegion()));
         try {
             ObjectMapper mapper = new ObjectMapper()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -133,7 +129,7 @@ public class LotteryResultPollingService implements PollingService {
             if (currentDrawData.size() > 2000) {
                 currentDrawData.remove(currentDrawData.size() - 1);
             }
-            
+
             if (currentDrawData.size() > 1) {
                 // TODO: add only most recent element in the lotteryDrawsArray
                 String mostRecentDateInDb = currentDrawData.get(0).getResults().getAsOfDate();
@@ -144,20 +140,20 @@ public class LotteryResultPollingService implements PollingService {
                 } else {
                     List<LotteryDraw> gamesNeedingInsert = getGamesNeedingInsert(mostRecentDateInDb, lotteryDraws);
                     String postFix = (gamesNeedingInsert.size() == 1) ? "Draw" : "Draws";
-                    log.info(String.format("Inserting %d %s for lotto game: %s",gamesNeedingInsert.size(), postFix,
+                    log.info(String.format("Inserting %d %s for lotto game: %s", gamesNeedingInsert.size(), postFix,
                             lotteryGame.getFullName()));
                     for (int i = gamesNeedingInsert.size() - 1; i >= 0; i--) {
                         currentDrawData.add(0, gamesNeedingInsert.get(i));
                     }
                 }
-            }else {
+            } else {
                 currentDrawData.addAll(Arrays.asList(lotteryDraws));
             }
             final Optional<LotteryGame> gameToUpdate =
                     lotteryState.getStateLotteryGames()
                             .stream()
                             .filter(g -> g.getFullName().equals(lotteryGame.getFullName()))
-                    .findFirst();
+                            .findFirst();
             gameToUpdate.ifPresent(game -> game.setLotteryDraws(currentDrawData));
             lotteryStateRepository.save(lotteryState);
         } catch (Exception e) {
@@ -171,7 +167,7 @@ public class LotteryResultPollingService implements PollingService {
         for (int i = 0; i < lotteryDraws.length; i++) {
             if (!lotteryDraws[i].getResults().getAsOfDate().equals(mostRecentDateInDb)) {
                 gamesNeedingInsert.addLast(lotteryDraws[i]);
-            }else {
+            } else {
                 break;
             }
         }
