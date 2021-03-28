@@ -22,12 +22,13 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.net.URI;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.LinkedList;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -66,25 +67,29 @@ public class LotteryResultPollingService implements PollingService {
             LotteryState lotteryState = mongoConfig.mongoTemplate()
                     .findOne(Query.query(Criteria.where("stateRegion").is(region)), LotteryState.class);
             if (lotteryState != null) {
-                List<LotteryGame> nonCardLotteryGames =
-                        lotteryState.getStateLotteryGames().stream()
-                                .filter(game -> !game.getType().contains("CARD"))
-                                .collect(Collectors.toList());
+                List<LotteryGame> nonCardLotteryGames = getNonCardLotteryGames(lotteryState);
                 for (LotteryGame lotteryGame : nonCardLotteryGames) {
                     if (lotteryGame.getLotteryDraws() == null) {
                         lotteryGame.setLotteryDraws(new ArrayList<>());
                     }
-                    int last = (lotteryGame.getLotteryDraws().size() > 1) ? 1 : 1000;
-                    String queryString = populateQueryString(lotteryGame, last, region);
-                    String data = webClient.post()
-                            .uri(drawResultUri)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .headers(this::populateHeaders)
-                            .body(BodyInserters.fromValue(queryString))
-                            .retrieve()
-                            .bodyToMono(String.class)
-                            .block();
-                    updateStateLotteryGame(data, lotteryGame, lotteryState);
+
+                    int gamesToQueryFor = (lotteryGame.getLotteryDraws().size() > 0) ?
+                            (int) getGameCountToQueryFor(lotteryGame) : 1000;
+
+                    if (gamesToQueryFor > 0) {
+                        String queryString = populateQueryString(lotteryGame, gamesToQueryFor, region);
+                        String data = webClient.post()
+                                .uri(drawResultUri)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .headers(this::populateHeaders)
+                                .body(BodyInserters.fromValue(queryString))
+                                .retrieve()
+                                .bodyToMono(String.class)
+                                .block();
+                        updateStateLotteryGame(data, lotteryGame, lotteryState);
+                    } else {
+                        log.info(String.format("No game updates needed for %s", lotteryGame.getFullName()));
+                    }
                 }
             }
         }
@@ -103,20 +108,49 @@ public class LotteryResultPollingService implements PollingService {
     }
 
     /**
+     *
+     * @param lotteryState
+     * @return
+     */
+    private List<LotteryGame> getNonCardLotteryGames(LotteryState lotteryState) {
+        return lotteryState.getStateLotteryGames().stream()
+                .filter(game -> !game.getType().contains("CARD"))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     *
+     * @param lotteryGame
+     * @return
+     */
+    private long getGameCountToQueryFor(LotteryGame lotteryGame) {
+        if (lotteryGame.getLotteryDraws().get(0).getResults().getAsOfDate() == null) {
+            return -1;
+        }
+        // Grab the most recent draw date from the database
+        String mostRecentDrawDate = lotteryGame.getLotteryDraws().get(0).getResults().getAsOfDate();
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+        OffsetDateTime mostRecentDrawOffsetDate = OffsetDateTime.parse(mostRecentDrawDate);
+        //Period duration = Period.between(now.toLocalDate(), mostRecentDrawOffsetDate.toLocalDate());
+        // Calculate the difference between current date now and previous draw date
+        Duration difference = Duration.between(mostRecentDrawOffsetDate, now);
+        return difference.toDays();
+    }
+
+    /**
      * @param data
      * @param lotteryGame
      * @param lotteryState
      */
     private void updateStateLotteryGame(String data, LotteryGame lotteryGame, LotteryState lotteryState) {
-        log.info(format("Performing game update for %s in region %s", lotteryGame.getFullName(), lotteryState.getStateRegion()));
         try {
             ObjectMapper mapper = new ObjectMapper()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
             JsonNode node = mapper.readTree(data);
             JsonNode gameInformationNode = node.at("/data/game");
-            String lastGameDate = gameInformationNode.get("lastGameDate").toString();
-            String nextGameDate = gameInformationNode.get("nextGameDate").toString();
+            String lastGameDate = gameInformationNode.get("lastGameDate").textValue();
+            String nextGameDate = gameInformationNode.get("nextGameDate").textValue();
 
             JsonNode drawNode = node.at("/data/game/draws");
             LotteryDraw[] lotteryDraws = mapper.treeToValue(drawNode, LotteryDraw[].class);
@@ -125,48 +159,73 @@ public class LotteryResultPollingService implements PollingService {
             lotteryGame.setLastGameDate(lastGameDate);
 
             List<LotteryDraw> currentDrawData = lotteryGame.getLotteryDraws();
-            lotteryGame.setDrawHistoryCount(Integer.toString(currentDrawData.size()));
+            
+            // This is to ensure the data in the database never grows post 2000 drawings
             if (currentDrawData.size() > 2000) {
                 currentDrawData.remove(currentDrawData.size() - 1);
             }
 
             if (currentDrawData.size() > 1) {
-                // TODO: add only most recent element in the lotteryDrawsArray
-                String mostRecentDateInDb = currentDrawData.get(0).getResults().getAsOfDate();
-                String mostRecentDateFromApi = lotteryDraws[0].getResults().getAsOfDate();
-                if (mostRecentDateInDb.equals(mostRecentDateFromApi)) {
-                    log.info(String.format("No game updates needed for %s", lotteryGame.getFullName()));
-                    //return;
-                } else {
-                    List<LotteryDraw> gamesNeedingInsert = getGamesNeedingInsert(mostRecentDateInDb, lotteryDraws);
-                    String postFix = (gamesNeedingInsert.size() == 1) ? "Draw" : "Draws";
-                    log.info(String.format("Inserting %d %s for lotto game: %s", gamesNeedingInsert.size(), postFix,
+                List<LotteryDraw> drawsToInsert =
+                        getGamesNeedingInsert(lotteryGame.getLotteryDraws().get(0).getResults().getAsOfDate(), lotteryDraws);
+                if (drawsToInsert.size() >= 1) {
+                    String postFix = (drawsToInsert.size() == 1) ? "Draw" : "Draws";
+                    log.info(String.format("Inserting %d %s for lotto game: %s", drawsToInsert.size(), postFix,
                             lotteryGame.getFullName()));
-                    for (int i = gamesNeedingInsert.size() - 1; i >= 0; i--) {
-                        currentDrawData.add(0, gamesNeedingInsert.get(i));
+                    for (int i = drawsToInsert.size() - 1; i >= 0; i--) {
+                        currentDrawData.add(0, drawsToInsert.get(i));
                     }
+                } else {
+                    log.info(String.format("No recent drawings to insert for %s", lotteryGame.getFullName()));
+                    return;
                 }
             } else {
+                // If there happens to be a brand new game being added to state grab up to a thousand of the most recent
+                // drawings
+                log.info(String.format("Inserting last 1000 draws for %s", lotteryGame.getFullName()));
                 currentDrawData.addAll(Arrays.asList(lotteryDraws));
             }
-            final Optional<LotteryGame> gameToUpdate =
-                    lotteryState.getStateLotteryGames()
-                            .stream()
-                            .filter(g -> g.getFullName().equals(lotteryGame.getFullName()))
-                            .findFirst();
-            gameToUpdate.ifPresent(game -> game.setLotteryDraws(currentDrawData));
-            lotteryStateRepository.save(lotteryState);
+            // Update and save game data for the state
+            updateAndSaveLotteryStateData(lotteryGame, lotteryState, currentDrawData);
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
     }
 
+    /**
+     *
+     * @param lotteryGame
+     * @param lotteryState
+     * @param currentDrawData
+     */
+    private void updateAndSaveLotteryStateData(LotteryGame lotteryGame, LotteryState lotteryState, List<LotteryDraw> currentDrawData) {
+        log.info(format("Performing game update for %s in region %s", lotteryGame.getFullName(), lotteryState.getStateRegion()));
+        final Optional<LotteryGame> gameToUpdate =
+                lotteryState.getStateLotteryGames()
+                        .stream()
+                        .filter(g -> g.getFullName().equals(lotteryGame.getFullName()))
+                        .findFirst();
+        gameToUpdate.ifPresent(game -> game.setLotteryDraws(currentDrawData));
+        gameToUpdate.ifPresent(game -> game.setDrawHistoryCount(String.valueOf(currentDrawData.size())));
+        lotteryStateRepository.save(lotteryState);
+        log.info(String.format("Successfully saved data for: %s %s", lotteryState.getStateRegion(), lotteryGame.getFullName()));
+    }
+
+    /**
+     *
+     * @param mostRecentDateInDb
+     * @param lotteryDraws
+     * @return
+     */
     private List<LotteryDraw> getGamesNeedingInsert(String mostRecentDateInDb,
                                                     LotteryDraw[] lotteryDraws) {
         LinkedList<LotteryDraw> gamesNeedingInsert = new LinkedList<>();
-        for (int i = 0; i < lotteryDraws.length; i++) {
-            if (!lotteryDraws[i].getResults().getAsOfDate().equals(mostRecentDateInDb)) {
-                gamesNeedingInsert.addLast(lotteryDraws[i]);
+        for (final LotteryDraw lotteryDraw : lotteryDraws) {
+            if (lotteryDraw.getResults() == null || lotteryDraw.getResults().getAsOfDate() == null) {
+                continue;
+            }
+            if (!lotteryDraw.getResults().getAsOfDate().equals(mostRecentDateInDb)) {
+                gamesNeedingInsert.addLast(lotteryDraw);
             } else {
                 break;
             }
