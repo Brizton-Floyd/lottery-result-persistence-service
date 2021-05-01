@@ -45,12 +45,14 @@ public class ResultAggregator {
             lotteryResultPollingService.pollForUpdatesToDrawResults();
         } catch (Exception e) {
             log.debug(e.getMessage());
+        } 
+        finally {
+            logNextRunTime();
         }
     }
 
     @PostConstruct
-    public void init() {
-        //Update: Resolve compile time error for static method `parse`
+    public void logNextRunTime() {
         CronExpression cronTrigger = CronExpression.parse(drawCronExpression);
 
         LocalDateTime next = cronTrigger.next(LocalDateTime.now());
