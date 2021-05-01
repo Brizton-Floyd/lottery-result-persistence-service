@@ -1,12 +1,16 @@
 package com.floyd.lottoptions.agr.task;
 
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.util.Date;
+
+import javax.annotation.PostConstruct;
 
 import com.floyd.lottoptions.agr.service.impl.LotteryResultPollingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -15,6 +19,8 @@ public class ResultAggregator {
     private static final Logger log = LoggerFactory.getLogger(ResultAggregator.class);
 
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
+
+    private static final String drawCronExpression = "0 0 */2 * * ?";
 
     private final LotteryResultPollingService lotteryResultPollingService;
 
@@ -32,7 +38,7 @@ public class ResultAggregator {
         }
     }
 
-    @Scheduled(cron = "0 0 */2 * * ?")
+    @Scheduled(cron = drawCronExpression)
     public void performDrawResultUpdates() {
         log.info("Aggregating US Lottery Results Draw Results{}", dateFormat.format(new Date()));
         try {
@@ -40,5 +46,15 @@ public class ResultAggregator {
         } catch (Exception e) {
             log.debug(e.getMessage());
         }
+    }
+
+    @PostConstruct
+    public void init() {
+        //Update: Resolve compile time error for static method `parse`
+        CronExpression cronTrigger = CronExpression.parse(drawCronExpression);
+
+        LocalDateTime next = cronTrigger.next(LocalDateTime.now());
+
+        log.info("Next Execution Time: " + next);
     }
 }
