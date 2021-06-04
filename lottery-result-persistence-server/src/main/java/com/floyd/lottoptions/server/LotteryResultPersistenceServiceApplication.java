@@ -10,8 +10,7 @@ import org.springframework.data.mongodb.repository.config.EnableMongoRepositorie
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @EnableScheduling
-@SpringBootApplication
-@ComponentScan(value = {"com.floyd"})
+@SpringBootApplication(scanBasePackages =  {"com.floyd"})
 @EnableMongoRepositories(basePackageClasses = LotteryStateRepository.class)
 public class LotteryResultPersistenceServiceApplication {
 

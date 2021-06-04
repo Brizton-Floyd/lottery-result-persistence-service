@@ -2,8 +2,8 @@ package com.floyd.lottoptions.controller;
 
 import com.floyd.lottoptions.agr.service.impl.LotteryResultPollingService;
 import com.floyd.lottoptions.service.DataService;
-import model.request.StateGamesRequest;
-import model.response.StateGamesResponse;
+import com.floyd.persistence.model.request.StateGameAnalysisRequest;
+import com.floyd.persistence.model.response.StateGamesResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -28,7 +28,7 @@ public class PersistenceServiceController {
     }
 
     @PostMapping("/state/games")
-    ResponseEntity<StateGamesResponse> requestResponse(@Validated @RequestBody StateGamesRequest request) {
+    ResponseEntity<StateGamesResponse> requestResponse(@Validated @RequestBody StateGameAnalysisRequest request) {
         log.info("Received request: {}", request);
         try {
             final Optional<StateGamesResponse> stateData = lotteryDataService.getStateData(request);

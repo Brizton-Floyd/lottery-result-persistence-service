@@ -2,13 +2,14 @@ package com.floyd.lottoptions.service.impl;
 
 import com.floyd.lottoptions.agr.config.MongoConfig;
 import com.floyd.lottoptions.service.DataService;
-import model.LotteryGame;
-import model.LotteryState;
-import model.request.StateGamesRequest;
-import model.response.StateGamesResponse;
+import com.floyd.persistence.model.LotteryGame;
+import com.floyd.persistence.model.LotteryState;
+import com.floyd.persistence.model.request.StateGameAnalysisRequest;
+import com.floyd.persistence.model.response.StateGamesResponse;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,23 +25,38 @@ public class LotteryDataService implements DataService {
     }
 
     @Override
-    public Optional<StateGamesResponse> getStateData(StateGamesRequest stateGamesRequest) throws Exception {
+    public Optional<StateGamesResponse> getStateData(StateGameAnalysisRequest stateGameAnalysisRequest) throws Exception {
         int idx = 0;
         StateGamesResponse stateGamesResponse = null;
         Optional<LotteryState> lotteryState = Optional.ofNullable(mongoConfig.mongoTemplate()
                 .findOne(
                         Query.query(
-                                Criteria.where("stateRegion").is(stateGamesRequest.getRegion())), LotteryState.class));
+                                Criteria.where("stateRegion").is(stateGameAnalysisRequest.getRegion())), LotteryState.class));
+
         if (lotteryState.isPresent()) {
-            final List<LotteryGame> stateLotteryGames = lotteryState.get().getStateLotteryGames();
+            
             List<LotteryGame> lotteryGames = new ArrayList<>();
-            for (LotteryGame lotteryGame : stateLotteryGames) {
-                if (idx++ != 0) {
-                    lotteryGame.setLotteryDraws(new ArrayList<>());
-                }
-                lotteryGames.add(lotteryGame);
-            }
             stateGamesResponse = new StateGamesResponse();
+            final List<LotteryGame> stateLotteryGames = lotteryState.get().getStateLotteryGames();
+            
+            // Return just the chosen game based on ID provided in the request
+            if (StringUtils.hasText(stateGameAnalysisRequest.getGameId())) {
+                LotteryGame filteredLotteryGame = stateLotteryGames
+                .stream()
+                .filter(game -> game.getId().equals(stateGameAnalysisRequest.getGameId()))
+                .findFirst()
+                .orElse(null);
+                stateGamesResponse.setLotteryGame(filteredLotteryGame);
+            }
+            else {
+                // Return all given games the current state runs
+                for (LotteryGame lotteryGame : stateLotteryGames) {
+                    if (idx++ != 0) {
+                        lotteryGame.setLotteryDraws(new ArrayList<>());
+                    }
+                    lotteryGames.add(lotteryGame);
+                }
+            }
             stateGamesResponse.setLotteryGames(lotteryGames);
         }
         return Optional.ofNullable(stateGamesResponse);

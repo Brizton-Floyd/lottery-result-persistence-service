@@ -1,8 +1,8 @@
-model\Results.class
-model\LotteryGame.class
-model\Values.class
-model\Prizes.class
-model\request\StateGamesRequest.class
-model\response\StateGamesResponse.class
-model\LotteryDraw.class
-model\LotteryState.class
+com\floyd\persistence\model\LotteryDraw.class
+com\floyd\persistence\model\LotteryState.class
+com\floyd\persistence\model\response\StateGamesResponse.class
+com\floyd\persistence\model\request\StateGameAnalysisRequest.class
+com\floyd\persistence\model\LotteryGame.class
+com\floyd\persistence\model\Prizes.class
+com\floyd\persistence\model\Values.class
+com\floyd\persistence\model\Results.class

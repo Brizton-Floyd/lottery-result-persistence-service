@@ -1,10 +1,10 @@
 package com.floyd.lottoptions.service;
 
-import model.request.StateGamesRequest;
-import model.response.StateGamesResponse;
+import com.floyd.persistence.model.request.StateGameAnalysisRequest;
+import com.floyd.persistence.model.response.StateGamesResponse;
 
 import java.util.Optional;
 
 public interface DataService {
-    Optional<StateGamesResponse> getStateData(StateGamesRequest stateGamesRequest) throws Exception;
+    Optional<StateGamesResponse> getStateData(StateGameAnalysisRequest stateGameAnalysisRequest) throws Exception;
 }

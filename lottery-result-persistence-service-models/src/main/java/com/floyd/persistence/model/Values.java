@@ -1,4 +1,4 @@
-package model;
+package com.floyd.persistence.model;
 
 import lombok.Data;
 
