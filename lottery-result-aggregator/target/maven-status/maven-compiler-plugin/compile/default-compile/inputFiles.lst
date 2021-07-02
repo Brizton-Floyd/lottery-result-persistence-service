@@ -1,7 +1,6 @@
-C:\Users\brizt\Desktop\Lotto Options Workspace\lottery-result-persistence-service\lottery-result-aggregator\src\main\java\com\floyd\lottoptions\agr\service\impl\LotteryResultPollingService.java
-C:\Users\brizt\Desktop\Lotto Options Workspace\lottery-result-persistence-service\lottery-result-aggregator\src\main\java\com\floyd\lottoptions\agr\service\PollingService.java
-C:\Users\brizt\Desktop\Lotto Options Workspace\lottery-result-persistence-service\lottery-result-aggregator\src\main\java\com\floyd\lottoptions\agr\config\ApplicationConfig.java
-C:\Users\brizt\Desktop\Lotto Options Workspace\lottery-result-persistence-service\lottery-result-aggregator\src\main\java\com\floyd\lottoptions\agr\config\MongoConfig.java
-C:\Users\brizt\Desktop\Lotto Options Workspace\lottery-result-persistence-service\lottery-result-aggregator\src\main\java\com\floyd\lottoptions\agr\config\LotteryRegionConfig.java
-C:\Users\brizt\Desktop\Lotto Options Workspace\lottery-result-persistence-service\lottery-result-aggregator\src\main\java\com\floyd\lottoptions\agr\repository\LotteryStateRepository.java
-C:\Users\brizt\Desktop\Lotto Options Workspace\lottery-result-persistence-service\lottery-result-aggregator\src\main\java\com\floyd\lottoptions\agr\task\ResultAggregator.java
+/Users/briztonfloyd/Desktop/Lotto Options Workspace/lottery-result-persistence-service/lottery-result-aggregator/src/main/java/com/floyd/lottoptions/agr/config/ApplicationConfig.java
+/Users/briztonfloyd/Desktop/Lotto Options Workspace/lottery-result-persistence-service/lottery-result-aggregator/src/main/java/com/floyd/lottoptions/agr/config/LotteryUrlConfig.java
+/Users/briztonfloyd/Desktop/Lotto Options Workspace/lottery-result-persistence-service/lottery-result-aggregator/src/main/java/com/floyd/lottoptions/agr/service/impl/LotteryResultPollingService.java
+/Users/briztonfloyd/Desktop/Lotto Options Workspace/lottery-result-persistence-service/lottery-result-aggregator/src/main/java/com/floyd/lottoptions/agr/config/LotteryRegionConfig.java
+/Users/briztonfloyd/Desktop/Lotto Options Workspace/lottery-result-persistence-service/lottery-result-aggregator/src/main/java/com/floyd/lottoptions/agr/task/DrawResultAggregator.java
+/Users/briztonfloyd/Desktop/Lotto Options Workspace/lottery-result-persistence-service/lottery-result-aggregator/src/main/java/com/floyd/lottoptions/agr/service/PollingService.java

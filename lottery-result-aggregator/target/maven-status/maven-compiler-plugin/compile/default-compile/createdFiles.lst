@@ -1,7 +1,7 @@
-com\floyd\lottoptions\agr\config\ApplicationConfig.class
-com\floyd\lottoptions\agr\task\ResultAggregator.class
-com\floyd\lottoptions\agr\config\LotteryRegionConfig.class
-com\floyd\lottoptions\agr\repository\LotteryStateRepository.class
-com\floyd\lottoptions\agr\config\MongoConfig.class
-com\floyd\lottoptions\agr\service\PollingService.class
-com\floyd\lottoptions\agr\service\impl\LotteryResultPollingService.class
+com/floyd/lottoptions/agr/config/LotteryUrlConfig$StateGameUrls.class
+com/floyd/lottoptions/agr/task/DrawResultAggregator.class
+com/floyd/lottoptions/agr/config/LotteryUrlConfig.class
+com/floyd/lottoptions/agr/service/PollingService.class
+com/floyd/lottoptions/agr/service/impl/LotteryResultPollingService.class
+com/floyd/lottoptions/agr/config/ApplicationConfig.class
+com/floyd/lottoptions/agr/config/LotteryRegionConfig.class

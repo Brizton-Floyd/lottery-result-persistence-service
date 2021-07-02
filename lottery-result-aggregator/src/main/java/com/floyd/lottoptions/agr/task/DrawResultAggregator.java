@@ -14,9 +14,9 @@ import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ResultAggregator {
+public class DrawResultAggregator {
 
-    private static final Logger log = LoggerFactory.getLogger(ResultAggregator.class);
+    private static final Logger log = LoggerFactory.getLogger(DrawResultAggregator.class);
 
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
 
@@ -24,19 +24,19 @@ public class ResultAggregator {
 
     private final LotteryResultPollingService lotteryResultPollingService;
 
-    public ResultAggregator(LotteryResultPollingService lotteryResultPollingService) {
+    public DrawResultAggregator(LotteryResultPollingService lotteryResultPollingService) {
         this.lotteryResultPollingService = lotteryResultPollingService;
     }
 
-    @Scheduled(cron = "0 30 03 01 */3 *")
-    public void reportCurrentTime() {
-        log.info("Aggregating US Lottery Results {}", dateFormat.format(new Date()));
-        try {
-            lotteryResultPollingService.pollForUpdatesToStateGames();
-        } catch (Exception e) {
-            log.debug(e.getMessage());
-        }
-    }
+//    @Scheduled(cron = "0 30 03 01 */3 *")
+//    public void reportCurrentTime() {
+//        log.info("Aggregating US Lottery Results {}", dateFormat.format(new Date()));
+//        try {
+//            lotteryResultPollingService.pollForUpdatesToStateGames();
+//        } catch (Exception e) {
+//            log.debug(e.getMessage());
+//        }
+//    }
 
     @Scheduled(cron = drawCronExpression)
     public void performDrawResultUpdates() {
