@@ -2,21 +2,13 @@ package com.floyd.persistence.model;
 
 import lombok.Data;
 
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
-public class LotteryGame {
-    private String id;
+public class LotteryGame implements Serializable {
     private String fullName;
-    private String shortName;
-    private String type;
-    private String abbrev;
-    private String description;
-    private String createdAt;
-    private String updatedAt;
-    private String officialUrl;
-    private String nextGameDate;
-    private String lastGameDate;
-    private String drawHistoryCount;
-    List<LotteryDraw> lotteryDraws;
+    private Integer drawHistoryCount;
+    List<LotteryDraw> lotteryDraws = new ArrayList<>();
 }

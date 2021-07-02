@@ -14,8 +14,6 @@ import java.util.List;
 public class LotteryResultPollingService implements PollingService {
 
     protected static final Logger log = LoggerFactory.getLogger(LotteryResultPollingService.class);
-    protected String directory = "/tmp";
-    protected String fileType = ".ser";
     private LotteryUrlConfig lotteryUrlConfig;
     private PollingServiceManager pollingServiceManger;
 

@@ -1,7 +1,13 @@
-com/floyd/lottoptions/agr/config/LotteryUrlConfig$StateGameUrls.class
-com/floyd/lottoptions/agr/task/DrawResultAggregator.class
+com/floyd/lottoptions/agr/service/PollingServiceManager$State.class
+com/floyd/lottoptions/agr/config/LotteryUrlConfig$GameUrlsForState.class
 com/floyd/lottoptions/agr/config/LotteryUrlConfig.class
+com/floyd/lottoptions/agr/config/LotteryUrlConfig$GameInfo.class
+com/floyd/lottoptions/agr/config/LotteryRegionConfig.class
+com/floyd/lottoptions/agr/service/PollingServiceManager.class
+com/floyd/lottoptions/agr/service/FileType.class
+com/floyd/lottoptions/agr/task/DrawResultAggregator.class
+com/floyd/lottoptions/agr/service/PollingServiceManager$1.class
+com/floyd/lottoptions/agr/service/DataFetcher.class
 com/floyd/lottoptions/agr/service/PollingService.class
 com/floyd/lottoptions/agr/service/impl/LotteryResultPollingService.class
-com/floyd/lottoptions/agr/config/ApplicationConfig.class
-com/floyd/lottoptions/agr/config/LotteryRegionConfig.class
+com/floyd/lottoptions/agr/service/impl/states/TexasLotteryResultProcessor.class

@@ -1,14 +1,14 @@
 package com.floyd.persistence.model;
 
 import lombok.Data;
-//import org.springframework.data.annotation.Id;
-//import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.io.Serializable;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
-//@Document(collection = "drawresults")
-public class LotteryDraw {
-   // @Id
-    private String id;
-    private Prizes prizes;
-    private Results results;
+public class LotteryDraw implements Serializable {
+    private LocalDate drawDate;
+    private List<Integer> drawResults = new ArrayList<>();
 }

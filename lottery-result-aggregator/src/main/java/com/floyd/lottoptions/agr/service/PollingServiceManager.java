@@ -1,7 +1,6 @@
 package com.floyd.lottoptions.agr.service;
 
-import com.floyd.lottoptions.agr.service.impl.LotteryResultPollingService;
-import com.floyd.lottoptions.agr.service.impl.states.TexasLotteryResultFetcher;
+import com.floyd.lottoptions.agr.service.impl.states.TexasLotteryResultProcessor;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -13,7 +12,7 @@ public class PollingServiceManager {
     public DataFetcher getPollingService(State state) {
         switch (state) {
             case TEXAS:
-                return new TexasLotteryResultFetcher();
+                return new TexasLotteryResultProcessor();
 
             default:
                 return null;

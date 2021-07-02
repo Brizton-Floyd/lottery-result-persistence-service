@@ -1,2 +1,4 @@
-com/floyd/lottoptions/server/LotteryResultPersistenceServiceApplication.class
+com/floyd/lottoptions/service/impl/LotteryDataService.class
 com/floyd/lottoptions/service/DataService.class
+com/floyd/lottoptions/server/LotteryResultPersistenceServiceApplication.class
+com/floyd/lottoptions/controller/PersistenceServiceController.class

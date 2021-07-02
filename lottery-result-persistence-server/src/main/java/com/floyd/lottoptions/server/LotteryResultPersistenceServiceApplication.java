@@ -9,10 +9,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration;
+import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @EnableScheduling
-@SpringBootApplication(scanBasePackages =  {"com.floyd"})
+@SpringBootApplication(scanBasePackages =  {"com.floyd"},
+        exclude = {MongoAutoConfiguration.class, MongoDataAutoConfiguration.class})
 public class LotteryResultPersistenceServiceApplication implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(LotteryResultPersistenceServiceApplication.class);

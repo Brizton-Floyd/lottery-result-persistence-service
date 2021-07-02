@@ -87,13 +87,3 @@ urls:
           url: https://texaslottery.com/export/sites/lottery/Games/Daily_4/Winning_Numbers/daily4evening.csv
         - name: Daily 4 Night
           url: https://texaslottery.com/export/sites/lottery/Games/Daily_4/Winning_Numbers/daily4night.csv
-
-state:
-  games:
-    api:
-      host: https://games.api.lottery.com/
-      uri: api/v2.0/games?region=
-
-draw:
-  result:
-    uri: https://graffy.api.lottery.com/graphql

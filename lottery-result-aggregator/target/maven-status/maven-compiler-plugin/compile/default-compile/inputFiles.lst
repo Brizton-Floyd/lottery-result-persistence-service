@@ -1,6 +1,9 @@
-/Users/briztonfloyd/Desktop/Lotto Options Workspace/lottery-result-persistence-service/lottery-result-aggregator/src/main/java/com/floyd/lottoptions/agr/config/ApplicationConfig.java
 /Users/briztonfloyd/Desktop/Lotto Options Workspace/lottery-result-persistence-service/lottery-result-aggregator/src/main/java/com/floyd/lottoptions/agr/config/LotteryUrlConfig.java
 /Users/briztonfloyd/Desktop/Lotto Options Workspace/lottery-result-persistence-service/lottery-result-aggregator/src/main/java/com/floyd/lottoptions/agr/service/impl/LotteryResultPollingService.java
+/Users/briztonfloyd/Desktop/Lotto Options Workspace/lottery-result-persistence-service/lottery-result-aggregator/src/main/java/com/floyd/lottoptions/agr/service/PollingServiceManager.java
+/Users/briztonfloyd/Desktop/Lotto Options Workspace/lottery-result-persistence-service/lottery-result-aggregator/src/main/java/com/floyd/lottoptions/agr/service/impl/states/TexasLotteryResultProcessor.java
+/Users/briztonfloyd/Desktop/Lotto Options Workspace/lottery-result-persistence-service/lottery-result-aggregator/src/main/java/com/floyd/lottoptions/agr/service/FileType.java
 /Users/briztonfloyd/Desktop/Lotto Options Workspace/lottery-result-persistence-service/lottery-result-aggregator/src/main/java/com/floyd/lottoptions/agr/config/LotteryRegionConfig.java
 /Users/briztonfloyd/Desktop/Lotto Options Workspace/lottery-result-persistence-service/lottery-result-aggregator/src/main/java/com/floyd/lottoptions/agr/task/DrawResultAggregator.java
 /Users/briztonfloyd/Desktop/Lotto Options Workspace/lottery-result-persistence-service/lottery-result-aggregator/src/main/java/com/floyd/lottoptions/agr/service/PollingService.java
+/Users/briztonfloyd/Desktop/Lotto Options Workspace/lottery-result-persistence-service/lottery-result-aggregator/src/main/java/com/floyd/lottoptions/agr/service/DataFetcher.java

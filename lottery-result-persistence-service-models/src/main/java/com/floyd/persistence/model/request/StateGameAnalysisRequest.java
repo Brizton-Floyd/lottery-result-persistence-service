@@ -4,8 +4,8 @@ import lombok.Data;
 
 @Data
 public class StateGameAnalysisRequest {
-    private String region;
-    private String gameId;
+    private String stateName;
+    private String gameName;
     private String analysisMethod;
     private String drawPosition;
     private String lottoNumberGroupRange;
