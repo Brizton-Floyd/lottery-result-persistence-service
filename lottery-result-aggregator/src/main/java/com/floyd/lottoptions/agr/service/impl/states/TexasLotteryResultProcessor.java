@@ -48,6 +48,10 @@ public class TexasLotteryResultProcessor extends FileType implements DataFetcher
         switch (name) {
             case "Lotto Texas":
             case "Cash Five":
+            case "All or Nothing Morning":
+            case "All or Nothing Day":
+            case "All or Nothing Evening":
+            case "All or Nothing Night":
                 serializeDrawResults(name, drawResultsInCsvFormat, stateName, false, false);
                 break;
             case "Texas Two Step":

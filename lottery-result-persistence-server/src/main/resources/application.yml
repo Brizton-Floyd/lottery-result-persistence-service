@@ -87,3 +87,11 @@ urls:
           url: https://texaslottery.com/export/sites/lottery/Games/Daily_4/Winning_Numbers/daily4evening.csv
         - name: Daily 4 Night
           url: https://texaslottery.com/export/sites/lottery/Games/Daily_4/Winning_Numbers/daily4night.csv
+        - name: All or Nothing Morning
+          url: https://texaslottery.com/export/sites/lottery/Games/All_or_Nothing/Winning_Numbers/allornothingmorning.csv
+        - name: All or Nothing Day
+          url: https://texaslottery.com/export/sites/lottery/Games/All_or_Nothing/Winning_Numbers/allornothingday.csv
+        - name: All or Nothing Evening
+          url: https://texaslottery.com/export/sites/lottery/Games/All_or_Nothing/Winning_Numbers/allornothingevening.csv
+        - name: All or Nothing Night
+          url: https://texaslottery.com/export/sites/lottery/Games/All_or_Nothing/Winning_Numbers/allornothingnight.csv

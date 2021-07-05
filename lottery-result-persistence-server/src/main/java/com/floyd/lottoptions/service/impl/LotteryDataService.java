@@ -3,6 +3,7 @@ package com.floyd.lottoptions.service.impl;
 import com.floyd.lottoptions.service.DataService;
 import com.floyd.persistence.model.LotteryGame;
 import com.floyd.persistence.model.request.StateGameAnalysisRequest;
+import com.floyd.persistence.model.response.AllStateLottoGameResponse;
 import com.floyd.persistence.model.response.StateGamesResponse;
 import org.apache.commons.io.FileUtils;
 import org.springframework.stereotype.Service;
@@ -10,12 +11,12 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.ObjectInputStream;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Optional;
+import java.util.*;
+import java.util.regex.Pattern;
 
 @Service
 public class LotteryDataService implements DataService {
+
 
     @Override
     public Optional<StateGamesResponse> getStateData(StateGameAnalysisRequest stateGameAnalysisRequest) throws Exception {
@@ -50,5 +51,51 @@ public class LotteryDataService implements DataService {
             e.printStackTrace();
         }
         return Optional.of(stateGamesResponse);
+    }
+
+    @Override
+    public Optional<AllStateLottoGameResponse> getAllStateLotteryGames() throws Exception {
+        // Gather all directories within given directory
+            // The parent directory will be the state name
+                // all child directories will be the game names
+        Map<String, List<LotteryGame>> map = new HashMap<>();
+        populate(map);
+
+        AllStateLottoGameResponse allStateLottoGameResponse = new AllStateLottoGameResponse();
+        allStateLottoGameResponse.setAllStateLotteryGames(map);
+        return Optional.of(allStateLottoGameResponse);
+    }
+
+    private void populate(Map<String, List<LotteryGame>> map) {
+        File directory = new File("tmp/");
+        listFilesForFolder(directory, map, "");
+    }
+
+    private void listFilesForFolder(final File folder, Map<String, List<LotteryGame>> map, String state) {
+        String currentState = state;
+        if (folder.exists()) {
+            File[] fList = folder.listFiles();
+            if (fList != null) {
+                for (File file : fList) {
+                    if (file.isDirectory()) {
+                        currentState = file.getName().charAt(0) + file.getName().substring(1).toLowerCase();
+                        map.put(currentState, new ArrayList<>());
+                        listFilesForFolder(file, map, currentState);
+                    } else {
+
+                        String lotteryGameName = file.getName().split(Pattern.quote("."))[0];
+
+                        List<LotteryGame> lotteryGameList = map.get(currentState);
+                        LotteryGame lotteryGame = new LotteryGame();
+                        lotteryGame.setFullName(lotteryGameName);
+                        lotteryGame.setStateGameBelongsTo(currentState);
+                        lotteryGame.setLotteryDraws(null);
+
+                        lotteryGameList.add(lotteryGame);
+                    }
+                   // System.out.println(file.getName());
+                }
+            }
+        }
     }
 }
