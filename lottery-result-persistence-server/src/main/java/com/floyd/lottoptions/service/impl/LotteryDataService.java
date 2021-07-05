@@ -61,6 +61,9 @@ public class LotteryDataService implements DataService {
         Map<String, List<LotteryGame>> map = new HashMap<>();
         populate(map);
 
+        // for all lottery games names in ascending order
+        map.values().forEach(lst -> lst.sort(Comparator.comparing(LotteryGame::getFullName)));
+
         AllStateLottoGameResponse allStateLottoGameResponse = new AllStateLottoGameResponse();
         allStateLottoGameResponse.setAllStateLotteryGames(map);
         return Optional.of(allStateLottoGameResponse);
