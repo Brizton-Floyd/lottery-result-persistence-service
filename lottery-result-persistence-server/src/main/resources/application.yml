@@ -59,39 +59,39 @@ us:
 urls:
   allStateGames:
       - name: Powerball
-        url: https://texaslottery.com/export/sites/lottery/Games/Powerball/Winning_Numbers/powerball.csv
+        url: https://www.texaslottery.com/export/sites/lottery/Games/Powerball/Winning_Numbers/powerball.csv
       - name: Mega Millions
-        url: https://texaslottery.com/export/sites/lottery/Games/Mega_Millions/Winning_Numbers/megamillions.csv
+        url: https://www.texaslottery.com/export/sites/lottery/Games/Mega_Millions/Winning_Numbers/megamillions.csv
   states:
     - name: Texas
       gameInfo:
         - name: Cash Five
-          url: https://texaslottery.com/export/sites/lottery/Games/Cash_Five/Winning_Numbers/cashfive.csv
+          url: https://www.texaslottery.com/export/sites/lottery/Games/Cash_Five/Winning_Numbers/cashfive.csv
         - name: Lotto Texas
-          url: https://texaslottery.com/export/sites/lottery/Games/Lotto_Texas/Winning_Numbers/lottotexas.csv
+          url: https://www.texaslottery.com/export/sites/lottery/Games/Lotto_Texas/Winning_Numbers/lottotexas.csv
         - name: Texas Two Step
-          url: https://texaslottery.com/export/sites/lottery/Games/Texas_Two_Step/Winning_Numbers/texastwostep.csv
+          url: https://www.texaslottery.com/export/sites/lottery/Games/Texas_Two_Step/Winning_Numbers/texastwostep.csv
         - name: Pick 3 Morning
-          url: https://texaslottery.com/export/sites/lottery/Games/Pick_3/Winning_Numbers/pick3morning.csv
+          url: https://www.texaslottery.com/export/sites/lottery/Games/Pick_3/Winning_Numbers/pick3morning.csv
         - name: Pick 3 Day
-          url: https://texaslottery.com/export/sites/lottery/Games/Pick_3/Winning_Numbers/pick3day.csv
+          url: https://www.texaslottery.com/export/sites/lottery/Games/Pick_3/Winning_Numbers/pick3day.csv
         - name: Pick 3 Evening
-          url: https://texaslottery.com/export/sites/lottery/Games/Pick_3/Winning_Numbers/pick3evening.csv
+          url: https://www.texaslottery.com/export/sites/lottery/Games/Pick_3/Winning_Numbers/pick3evening.csv
         - name: Pick 3 Night
-          url: https://texaslottery.com/export/sites/lottery/Games/Pick_3/Winning_Numbers/pick3night.csv
+          url: https://www.texaslottery.com/export/sites/lottery/Games/Pick_3/Winning_Numbers/pick3night.csv
         - name: Daily 4 Morning
-          url: https://texaslottery.com/export/sites/lottery/Games/Daily_4/Winning_Numbers/daily4morning.csv
+          url: https://www.texaslottery.com/export/sites/lottery/Games/Daily_4/Winning_Numbers/daily4morning.csv
         - name: Daily 4 Day
-          url: https://texaslottery.com/export/sites/lottery/Games/Daily_4/Winning_Numbers/daily4day.csv
+          url: https://www.texaslottery.com/export/sites/lottery/Games/Daily_4/Winning_Numbers/daily4day.csv
         - name: Daily 4 Evening
-          url: https://texaslottery.com/export/sites/lottery/Games/Daily_4/Winning_Numbers/daily4evening.csv
+          url: https://www.texaslottery.com/export/sites/lottery/Games/Daily_4/Winning_Numbers/daily4evening.csv
         - name: Daily 4 Night
-          url: https://texaslottery.com/export/sites/lottery/Games/Daily_4/Winning_Numbers/daily4night.csv
+          url: https://www.texaslottery.com/export/sites/lottery/Games/Daily_4/Winning_Numbers/daily4night.csv
         - name: All or Nothing Morning
-          url: https://texaslottery.com/export/sites/lottery/Games/All_or_Nothing/Winning_Numbers/allornothingmorning.csv
+          url: https://www.texaslottery.com/export/sites/lottery/Games/All_or_Nothing/Winning_Numbers/allornothingmorning.csv
         - name: All or Nothing Day
-          url: https://texaslottery.com/export/sites/lottery/Games/All_or_Nothing/Winning_Numbers/allornothingday.csv
+          url: https://www.texaslottery.com/export/sites/lottery/Games/All_or_Nothing/Winning_Numbers/allornothingday.csv
         - name: All or Nothing Evening
-          url: https://texaslottery.com/export/sites/lottery/Games/All_or_Nothing/Winning_Numbers/allornothingevening.csv
+          url: https://www.texaslottery.com/export/sites/lottery/Games/All_or_Nothing/Winning_Numbers/allornothingevening.csv
         - name: All or Nothing Night
-          url: https://texaslottery.com/export/sites/lottery/Games/All_or_Nothing/Winning_Numbers/allornothingnight.csv
+          url: https://www.texaslottery.com/export/sites/lottery/Games/All_or_Nothing/Winning_Numbers/allornothingnight.csv

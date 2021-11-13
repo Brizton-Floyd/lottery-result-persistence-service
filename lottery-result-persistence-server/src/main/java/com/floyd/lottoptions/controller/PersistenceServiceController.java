@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -30,6 +31,20 @@ public class PersistenceServiceController {
         log.info("Received request for all state lotto games");
         try {
             final Optional<AllStateLottoGameResponse> stateData = lotteryDataService.getAllStateLotteryGames();
+            if (stateData.isPresent()) {
+                return new ResponseEntity<>(stateData.get(), HttpStatus.OK);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+    }
+
+    @GetMapping("/state-games/{state}")
+    ResponseEntity<List<String>> getAllStateGames(@PathVariable String state) {
+        log.info("Received request for all state lotto games");
+        try {
+            final Optional<List<String>> stateData = lotteryDataService.getAllStateLotteryGames(state);
             if (stateData.isPresent()) {
                 return new ResponseEntity<>(stateData.get(), HttpStatus.OK);
             }

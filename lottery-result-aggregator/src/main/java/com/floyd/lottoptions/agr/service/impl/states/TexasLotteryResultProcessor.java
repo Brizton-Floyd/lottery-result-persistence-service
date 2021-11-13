@@ -101,7 +101,12 @@ public class TexasLotteryResultProcessor extends FileType implements DataFetcher
                 while (counter < (data.length + bound)) {
                     lotteryDraw.getDrawResults().add(Integer.parseInt(data[counter++]));
                 }
-                Collections.sort(lotteryDraw.getDrawResults());
+                if (gameName.equals("Texas Two Step")) {
+                    Collections.sort(lotteryDraw.getDrawResults());
+                }
+                if (!includeBonus && !isFireBallIncluded) {
+                    Collections.sort(lotteryDraw.getDrawResults());
+                }
                 lotteryGame.getLotteryDraws().add(lotteryDraw);
 
             } catch (NumberFormatException e) {

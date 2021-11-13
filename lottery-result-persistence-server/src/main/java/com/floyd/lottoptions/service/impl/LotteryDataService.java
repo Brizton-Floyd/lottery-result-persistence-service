@@ -69,6 +69,22 @@ public class LotteryDataService implements DataService {
         return Optional.of(allStateLottoGameResponse);
     }
 
+    @Override
+    public Optional<List<String>> getAllStateLotteryGames(String state) throws Exception {
+        List<String> games = new ArrayList<>();
+        File directory = new File("tmp/" + state + "/");
+        if (directory.exists()) {
+            File[] files = directory.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    int index = file.getName().indexOf('.');
+                    games.add(file.getName().substring(0, index));
+                }
+            }
+        }
+        return Optional.of(games);
+    }
+
     private void populate(Map<String, List<LotteryGame>> map) {
         File directory = new File("tmp/");
         listFilesForFolder(directory, map, "");
