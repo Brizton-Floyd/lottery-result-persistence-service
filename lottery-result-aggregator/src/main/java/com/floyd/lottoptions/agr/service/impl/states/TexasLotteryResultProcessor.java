@@ -115,6 +115,7 @@ public class TexasLotteryResultProcessor extends FileType implements DataFetcher
         }
 
         int size = lotteryGame.getLotteryDraws().size() - 1;
+        lotteryGame.findMinMaxLottoNumber();
         lotteryGame.setDateLastUpdated(lotteryGame.getLotteryDraws().get(size).getDrawDate());
         lotteryGame.setDrawPositionCount(lotteryGame.getLotteryDraws().get(0).getDrawResults().size());
         lotteryGame.setDrawHistoryCount(lotteryGame.getLotteryDraws().size());
