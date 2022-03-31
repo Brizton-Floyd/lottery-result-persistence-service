@@ -25,7 +25,7 @@ public class LotteryGame implements Serializable {
         return this.fullName;
     }
 
-    public void findMinMaxLottoNumber() {
+    public void findMinMaxLottoNumber(String stateName) {
         int currentMin = Integer.MAX_VALUE;
         int currentMax = Integer.MIN_VALUE;
 
@@ -38,5 +38,9 @@ public class LotteryGame implements Serializable {
 
         maxNumber = currentMax;
         minNumber = currentMin;
+
+        if (fullName.equals("Cash Five") && "Texas".equals(stateName)) {
+            maxNumber = 35;
+        }
     }
 }
