@@ -1,25 +1,36 @@
-package com.floyd.lottoptions.agr.service;
+package com.floyd.lottoptions.agr.processor;
 
-import com.floyd.lottoptions.agr.service.impl.states.TexasLotteryResultProcessor;
+import com.floyd.lottoptions.agr.documentreaders.FileReaderFactory;
+import com.floyd.lottoptions.agr.documentreaders.FileReaderType;
+import com.floyd.lottoptions.agr.persistence.LotteryGameSerializer;
+import com.floyd.lottoptions.agr.processor.HistoryProcessor;
+import com.floyd.lottoptions.agr.processor.TexasLotteryHistoryProcessor;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
 
 @Service
-public class PollingServiceManager {
+public class LotteryHistoryProcessorFactory {
 
-    public DataFetcher getPollingService(State state) {
+    private final FileReaderFactory fileReaderFactory;
+
+    public LotteryHistoryProcessorFactory(FileReaderFactory fileReaderFactory) {
+        this.fileReaderFactory = fileReaderFactory;
+    }
+
+    public HistoryProcessor getLottoHistoryProcessor(String str) {
+        State state = State.valueOf(str);
         switch (state) {
             case TEXAS:
-                return new TexasLotteryResultProcessor();
+                return new TexasLotteryHistoryProcessor(this.fileReaderFactory.getFileReader(FileReaderType.CSV), new LotteryGameSerializer());
 
             default:
                 return null;
         }
     }
 
-    public enum State {
+    private enum State {
 
         ALABAMA("Alabama", "AL"), ALASKA("Alaska", "AK"), AMERICAN_SAMOA("American Samoa", "AS"), ARIZONA("Arizona", "AZ"), ARKANSAS(
                 "Arkansas", "AR"), CALIFORNIA("California", "CA"), COLORADO("Colorado", "CO"), CONNECTICUT("Connecticut", "CT"), DELAWARE(

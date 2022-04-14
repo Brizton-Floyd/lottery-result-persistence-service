@@ -1,9 +1,8 @@
-package com.floyd.lottoptions.agr.service.impl;
+package com.floyd.lottoptions.agr.polling;
 
 import com.floyd.lottoptions.agr.config.LotteryUrlConfig;
-import com.floyd.lottoptions.agr.service.DataFetcher;
-import com.floyd.lottoptions.agr.service.PollingService;
-import com.floyd.lottoptions.agr.service.PollingServiceManager;
+import com.floyd.lottoptions.agr.processor.HistoryProcessor;
+import com.floyd.lottoptions.agr.processor.LotteryHistoryProcessorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -15,11 +14,11 @@ public class LotteryResultPollingService implements PollingService {
 
     protected static final Logger log = LoggerFactory.getLogger(LotteryResultPollingService.class);
     private LotteryUrlConfig lotteryUrlConfig;
-    private PollingServiceManager pollingServiceManger;
+    private final LotteryHistoryProcessorFactory processorFactory;
 
-    public LotteryResultPollingService(LotteryUrlConfig lotteryUrlConfig, PollingServiceManager pollingServiceManager) {
+    public LotteryResultPollingService(LotteryUrlConfig lotteryUrlConfig, LotteryHistoryProcessorFactory lotteryHistoryProcessorFactory) {
         this.lotteryUrlConfig = lotteryUrlConfig;
-        this.pollingServiceManger = pollingServiceManager;
+        this.processorFactory = lotteryHistoryProcessorFactory;
     }
 
     @Override
@@ -28,12 +27,12 @@ public class LotteryResultPollingService implements PollingService {
         // Grab all files ending with ser extension
         List<LotteryUrlConfig.GameUrlsForState> allStateGames = lotteryUrlConfig.getGameUrls();
         for (LotteryUrlConfig.GameUrlsForState gameInfo : allStateGames) {
+            final String lotteryStateName = gameInfo.getName().toUpperCase();
+            final HistoryProcessor historyProcessor =
+                    processorFactory.getLottoHistoryProcessor(lotteryStateName);
 
-            DataFetcher dataFetcher =
-                    pollingServiceManger.getPollingService(PollingServiceManager.State.valueOf(gameInfo.getName().toUpperCase()));
-
-            if (dataFetcher != null) {
-                dataFetcher.getData(gameInfo.getName(), gameInfo.getGameInfo());
+            if (historyProcessor != null) {
+                historyProcessor.getHistoricalData(gameInfo.getName(), gameInfo.getGameInfo());
             }
         }
     }

@@ -95,3 +95,5 @@ urls:
           url: https://www.texaslottery.com/export/sites/lottery/Games/All_or_Nothing/Winning_Numbers/allornothingevening.csv
         - name: All or Nothing Night
           url: https://www.texaslottery.com/export/sites/lottery/Games/All_or_Nothing/Winning_Numbers/allornothingnight.csv
+        - name: Powerball
+          url: https://www.texaslottery.com/export/sites/lottery/Games/Powerball/Winning_Numbers/powerball.csv

@@ -1,6 +1,6 @@
 package com.floyd.lottoptions.controller;
 
-import com.floyd.lottoptions.agr.service.impl.LotteryResultPollingService;
+import com.floyd.lottoptions.agr.polling.LotteryResultPollingService;
 import com.floyd.lottoptions.service.DataService;
 import com.floyd.persistence.model.request.StateGameAnalysisRequest;
 import com.floyd.persistence.model.response.AllStateLottoGameResponse;

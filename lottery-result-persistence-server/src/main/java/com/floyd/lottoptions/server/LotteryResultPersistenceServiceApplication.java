@@ -2,7 +2,7 @@ package com.floyd.lottoptions.server;
 
 import com.floyd.lottoptions.agr.config.LotteryRegionConfig;
 import com.floyd.lottoptions.agr.config.LotteryUrlConfig;
-import com.floyd.lottoptions.agr.service.impl.LotteryResultPollingService;
+import com.floyd.lottoptions.agr.polling.LotteryResultPollingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

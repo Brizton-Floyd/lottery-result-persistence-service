@@ -1,41 +1,40 @@
-package com.floyd.lottoptions.agr.service.impl.states;
+package com.floyd.lottoptions.agr.processor;
 
 import com.floyd.lottoptions.agr.config.LotteryUrlConfig;
-import com.floyd.lottoptions.agr.service.DataFetcher;
-import com.floyd.lottoptions.agr.service.FileType;
-import com.floyd.lottoptions.agr.service.impl.LotteryResultPollingService;
+import com.floyd.lottoptions.agr.documentreaders.FileReader;
+import com.floyd.lottoptions.agr.persistence.LotteryGameSerializer;
+import com.floyd.lottoptions.agr.polling.LotteryResultPollingService;
 import com.floyd.persistence.model.LotteryDraw;
 import com.floyd.persistence.model.LotteryGame;
-import com.opencsv.CSVReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-public class TexasLotteryResultProcessor extends FileType implements DataFetcher {
+public class TexasLotteryHistoryProcessor implements HistoryProcessor {
     protected static final Logger log = LoggerFactory.getLogger(LotteryResultPollingService.class);
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("MM-dd-yyyy");
+    private final FileReader fileReader;
+    private final LotteryGameSerializer lotteryGameSerializer;
+
+    public TexasLotteryHistoryProcessor(FileReader fileReader, LotteryGameSerializer lotteryGameSerializer) {
+        this.fileReader = fileReader;
+        this.lotteryGameSerializer = lotteryGameSerializer;
+    }
 
     @Override
-    public void getData(String stateName, List<LotteryUrlConfig.GameInfo> gameInfo) throws Exception{
+    public void getHistoricalData(String stateName, List<LotteryUrlConfig.GameInfo> gameInfo) throws Exception{
         log.info("Updating Results Lotto Games for: " + stateName);
 
         for (LotteryUrlConfig.GameInfo info : gameInfo) {
-            InputStream input = new URL(info.getUrl()).openStream();
-            Reader reader = new InputStreamReader(input, StandardCharsets.UTF_8);
-            CSVReader csvReader = new CSVReader(reader);
-
-            List<String[]> drawResultsInCsvFormat = csvReader.readAll();
-            if (drawResultsInCsvFormat.size() > 2000) {
-                // This will help ensure the serialization of only the past 2000 lottery draw results
-                drawResultsInCsvFormat = drawResultsInCsvFormat.subList(drawResultsInCsvFormat.size() - 2000,
+            List<String[]> drawResultsInCsvFormat = this.fileReader.getFileContents(info);
+            if (drawResultsInCsvFormat.size() > 8000) {
+                // This will help ensure the serialization of only the past 8000 lottery draw results
+                drawResultsInCsvFormat = drawResultsInCsvFormat.subList(drawResultsInCsvFormat.size() - 8000,
                         drawResultsInCsvFormat.size());
             }
 
@@ -44,18 +43,19 @@ public class TexasLotteryResultProcessor extends FileType implements DataFetcher
         }
     }
 
-    private void processDrawResultsForGivenGame(String name, String stateName, List<String[]> drawResultsInCsvFormat) {
-        switch (name) {
+    private void processDrawResultsForGivenGame(String lottoGameName, String stateName, List<String[]> drawResultsInCsvFormat) {
+        switch (lottoGameName) {
             case "Lotto Texas":
             case "Cash Five":
             case "All or Nothing Morning":
             case "All or Nothing Day":
             case "All or Nothing Evening":
             case "All or Nothing Night":
-                serializeDrawResults(name, drawResultsInCsvFormat, stateName, false, false);
+                serializeDrawResults(lottoGameName, drawResultsInCsvFormat, stateName, false, false, true);
                 break;
             case "Texas Two Step":
-                serializeDrawResults(name, drawResultsInCsvFormat, stateName, true, false);
+            case "Powerball":
+                serializeDrawResults(lottoGameName, drawResultsInCsvFormat, stateName, true, false, true);
                 break;
             case "Pick 3 Morning":
             case "Pick 3 Day":
@@ -65,7 +65,8 @@ public class TexasLotteryResultProcessor extends FileType implements DataFetcher
             case "Daily 4 Day":
             case "Daily 4 Evening":
             case "Daily 4 Night":
-                serializeDrawResults(name, drawResultsInCsvFormat, stateName, false, true);
+                serializeDrawResults(lottoGameName, drawResultsInCsvFormat, stateName, false, true, false);
+                break;
 
         }
     }
@@ -74,40 +75,39 @@ public class TexasLotteryResultProcessor extends FileType implements DataFetcher
                                       List<String[]> drawResultsInCsvFormat,
                                       String stateName,
                                       boolean includeBonus,
-                                      boolean isFireBallIncluded) {
+                                      boolean isFireBallIncluded,
+                                      boolean sortResults) {
+
         log.info("Beginning serialization for " + stateName + ": " + gameName);
         LotteryGame lotteryGame = new LotteryGame();
+        lotteryGame.setStateGameBelongsTo(stateName);
         lotteryGame.setFullName(gameName);
-        for (String[] data : drawResultsInCsvFormat) {
-            final String date = data[3] + "-" + format(data[1]) + "-" + format(data[2]);
-            final LocalDate drawDate = LocalDate.parse(date);
 
+        for (String[] data : drawResultsInCsvFormat) {
             LotteryDraw lotteryDraw = new LotteryDraw();
-            int bound = 0;
+            final LocalDate drawDate = getDrawDate(data);
+            lotteryDraw.setDrawDate(drawDate);
+
+            int tail = data.length;
             if (includeBonus) {
                 int bonusNumber = Integer.parseInt(data[data.length - 1]);
                 lotteryDraw.setBonusNumber(bonusNumber);
-                bound = -1;
+                --tail;
             }
 
             if (isFireBallIncluded) {
-                bound = - 2;
+                tail -= 2;
             }
 
-            int counter = 0;
-            lotteryDraw.setDrawDate(drawDate);
-            while (counter < 4) counter++; // increment counter until draw result begins
+            int headPtr = 4;
             try {
-                while (counter < (data.length + bound)) {
-                    lotteryDraw.getDrawResults().add(Integer.parseInt(data[counter++]));
+                while (headPtr < tail) {
+                    lotteryDraw.getDrawResults().add(Integer.parseInt(data[headPtr++]));
                 }
-                if (gameName.equals("Texas Two Step")) {
+
+                if (sortResults)
                     Collections.sort(lotteryDraw.getDrawResults());
-                }
-                if (!includeBonus && !isFireBallIncluded) {
-                    Collections.sort(lotteryDraw.getDrawResults());
-                }
-                //Collections.sort(lotteryDraw.getDrawResults());
+
                 lotteryGame.getLotteryDraws().add(lotteryDraw);
 
             } catch (NumberFormatException e) {
@@ -122,25 +122,17 @@ public class TexasLotteryResultProcessor extends FileType implements DataFetcher
         lotteryGame.setDrawHistoryCount(lotteryGame.getLotteryDraws().size());
 
         try {
-            File file = new File("tmp/" + stateName.toUpperCase());
-            boolean mkdir = file.mkdirs();
-            serializeData(file.getPath() + "/" + gameName + ".ser", lotteryGame);
-            log.info("Successfully serialized draw results for " + stateName + ": " + gameName);
+            boolean isSerialized = this.lotteryGameSerializer.serialize(lotteryGame);
+            log.info("Successfully serialized draw results for " + stateName + ": " + gameName + "= " + isSerialized);
         } catch (IOException e) {
             log.error("Error happened during serialization of: " + gameName, e);
         }
     }
 
-    private void serializeData(String directory, Object obj) throws IOException {
-        //Saving of object in a file
-        FileOutputStream file = new FileOutputStream(directory, false);
-        ObjectOutputStream out = new ObjectOutputStream(file);
-
-        // Method for serialization of object
-        out.writeObject(obj);
-
-        out.close();
-        file.close();
+    private LocalDate getDrawDate(String[] data) {
+        final String date = data[3] + "-" + format(data[1]) + "-" + format(data[2]);
+        final LocalDate drawDate = LocalDate.parse(date);
+        return drawDate;
     }
 
     private String format(String elementInDateString) {

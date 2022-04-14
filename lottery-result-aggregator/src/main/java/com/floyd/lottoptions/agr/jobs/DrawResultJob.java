@@ -1,4 +1,4 @@
-package com.floyd.lottoptions.agr.task;
+package com.floyd.lottoptions.agr.jobs;
 
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
@@ -6,7 +6,7 @@ import java.util.Date;
 
 import javax.annotation.PostConstruct;
 
-import com.floyd.lottoptions.agr.service.impl.LotteryResultPollingService;
+import com.floyd.lottoptions.agr.polling.LotteryResultPollingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -14,9 +14,9 @@ import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Component;
 
 @Component
-public class DrawResultAggregator {
+public class DrawResultJob {
 
-    private static final Logger log = LoggerFactory.getLogger(DrawResultAggregator.class);
+    private static final Logger log = LoggerFactory.getLogger(DrawResultJob.class);
 
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
 
@@ -24,7 +24,7 @@ public class DrawResultAggregator {
 
     private final LotteryResultPollingService lotteryResultPollingService;
 
-    public DrawResultAggregator(LotteryResultPollingService lotteryResultPollingService) {
+    public DrawResultJob(LotteryResultPollingService lotteryResultPollingService) {
         this.lotteryResultPollingService = lotteryResultPollingService;
     }
 
