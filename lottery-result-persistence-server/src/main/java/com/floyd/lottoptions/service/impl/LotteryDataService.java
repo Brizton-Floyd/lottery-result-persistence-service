@@ -2,6 +2,7 @@ package com.floyd.lottoptions.service.impl;
 
 import com.floyd.lottoptions.service.DataService;
 import com.floyd.persistence.model.LotteryGame;
+import com.floyd.persistence.model.LotteryState;
 import com.floyd.persistence.model.request.StateGameAnalysisRequest;
 import com.floyd.persistence.model.response.AllStateLottoGameResponse;
 import com.floyd.persistence.model.response.StateGamesResponse;
@@ -70,6 +71,30 @@ public class LotteryDataService implements DataService {
     }
 
     @Override
+    public Optional<AllStateLottoGameResponse> getAllStateLotteryGamesV2() throws Exception {
+        AllStateLottoGameResponse allStateLottoGameResponse = new AllStateLottoGameResponse();
+
+        Map<String, List<LotteryGame>> map = new HashMap<>();
+        populate(map);
+
+        // for all lottery games names in ascending order
+        map.values().forEach(lst -> lst.sort(Comparator.comparing(LotteryGame::getFullName)));
+
+        List<LotteryState> lotteryStates = new ArrayList<>();
+        map.forEach((state, games) -> {
+            LotteryState lotteryState = new LotteryState();
+            lotteryState.setStateRegion(state);
+            lotteryState.setStateLotteryGames(games);
+
+            lotteryStates.add(lotteryState);
+        });
+
+        allStateLottoGameResponse.setLotteryStateGames(lotteryStates);
+
+        return Optional.of(allStateLottoGameResponse);
+    }
+
+    @Override
     public Optional<List<String>> getAllStateLotteryGames(String state) throws Exception {
         List<String> games = new ArrayList<>();
         File directory = new File("tmp/" + state + "/");
@@ -85,12 +110,12 @@ public class LotteryDataService implements DataService {
         return Optional.of(games);
     }
 
-    private void populate(Map<String, List<LotteryGame>> map) {
+    private void populate(Map<String, List<LotteryGame>> map) throws Exception{
         File directory = new File("tmp/");
         listFilesForFolder(directory, map, "");
     }
 
-    private void listFilesForFolder(final File folder, Map<String, List<LotteryGame>> map, String state) {
+    private void listFilesForFolder(final File folder, Map<String, List<LotteryGame>> map, String state) throws Exception {
         String currentState = state;
         if (folder.exists()) {
             File[] fList = folder.listFiles();
@@ -103,11 +128,20 @@ public class LotteryDataService implements DataService {
                     } else {
 
                         String lotteryGameName = file.getName().split(Pattern.quote("."))[0];
+                        StateGameAnalysisRequest request = new StateGameAnalysisRequest();
+                        request.setStateName(currentState);
+                        request.setGameName(lotteryGameName);
+
+                        Optional<StateGamesResponse> stateData = getStateData(request);
+                        StateGamesResponse stateGamesResponse = stateData.get();
+                        LotteryGame game = stateGamesResponse.getLotteryGame();
 
                         List<LotteryGame> lotteryGameList = map.get(currentState);
                         LotteryGame lotteryGame = new LotteryGame();
-                        lotteryGame.setFullName(lotteryGameName);
+                        lotteryGame.setFullName(game.getFullName());
                         lotteryGame.setStateGameBelongsTo(currentState);
+                        lotteryGame.setMinNumber(game.getMinNumber());
+                        lotteryGame.setMaxNumber(game.getMaxNumber());
                         lotteryGame.setLotteryDraws(null);
 
                         lotteryGameList.add(lotteryGame);

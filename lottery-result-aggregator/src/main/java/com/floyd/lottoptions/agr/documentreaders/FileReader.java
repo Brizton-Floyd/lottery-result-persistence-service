@@ -8,4 +8,5 @@ import java.util.List;
 
 public interface FileReader {
     List<String[]> getFileContents(LotteryUrlConfig.GameInfo gameInfo) throws IOException, CsvException;
+    void setLottoStateName(String lottoStateName);
 }

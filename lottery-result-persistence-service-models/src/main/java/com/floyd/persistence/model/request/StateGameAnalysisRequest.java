@@ -18,4 +18,7 @@ public class StateGameAnalysisRequest {
     private List<Integer> drawPositionsToExclude;
     private String[] drawLowHighPatterns;
     private int[] patternSegments;
+    private String direction;
+    private int pointer;
+    private int drawResultUpperBound;
 }

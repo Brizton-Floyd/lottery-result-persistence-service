@@ -40,6 +40,20 @@ public class PersistenceServiceController {
         return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
     }
 
+    @GetMapping("/all/v2/state-games")
+    ResponseEntity<AllStateLottoGameResponse> getAllUsStateGamesV2() {
+        log.info("Received request for all state lotto games");
+        try {
+            final Optional<AllStateLottoGameResponse> stateData = lotteryDataService.getAllStateLotteryGamesV2();
+            if (stateData.isPresent()) {
+                return new ResponseEntity<>(stateData.get(), HttpStatus.OK);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+    }
+
     @GetMapping("/state-games/{state}")
     ResponseEntity<List<String>> getAllStateGames(@PathVariable String state) {
         log.info("Received request for all state lotto games");

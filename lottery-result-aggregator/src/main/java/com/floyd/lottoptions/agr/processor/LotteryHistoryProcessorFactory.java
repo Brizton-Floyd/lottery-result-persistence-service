@@ -1,10 +1,9 @@
 package com.floyd.lottoptions.agr.processor;
 
+import com.floyd.lottoptions.agr.documentreaders.FileReader;
 import com.floyd.lottoptions.agr.documentreaders.FileReaderFactory;
 import com.floyd.lottoptions.agr.documentreaders.FileReaderType;
 import com.floyd.lottoptions.agr.persistence.LotteryGameSerializer;
-import com.floyd.lottoptions.agr.processor.HistoryProcessor;
-import com.floyd.lottoptions.agr.processor.TexasLotteryHistoryProcessor;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -23,11 +22,19 @@ public class LotteryHistoryProcessorFactory {
         State state = State.valueOf(str);
         switch (state) {
             case TEXAS:
-                return new TexasLotteryHistoryProcessor(this.fileReaderFactory.getFileReader(FileReaderType.CSV), new LotteryGameSerializer());
-
+                return new TexasLotteryHistoryProcessor(getFileReader(FileReaderType.CSV, str), new LotteryGameSerializer());
+            case LOUISIANA:
+                return new LouisianaLotteryHistoryProcessor(getFileReader(FileReaderType.PDF, str), new LotteryGameSerializer());
             default:
                 return null;
         }
+    }
+
+    private FileReader getFileReader(FileReaderType type,
+        String stateName) {
+        FileReader fileReader = this.fileReaderFactory.getFileReader(type);
+        fileReader.setLottoStateName(stateName);
+        return fileReader;
     }
 
     private enum State {

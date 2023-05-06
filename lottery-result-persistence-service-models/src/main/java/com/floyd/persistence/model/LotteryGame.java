@@ -1,6 +1,7 @@
 package com.floyd.persistence.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import java.util.Comparator;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -42,5 +43,12 @@ public class LotteryGame implements Serializable {
         if (fullName.equals("Cash Five") && "Texas".equals(stateName)) {
             maxNumber = 35;
         }
+        if (fullName.equals("Easy 5")) {
+            maxNumber = 37;
+        }
+    }
+
+    public void sortByDrawDateDescending() {
+        lotteryDraws.sort((Comparator.comparing(LotteryDraw::getDrawDate)));
     }
 }

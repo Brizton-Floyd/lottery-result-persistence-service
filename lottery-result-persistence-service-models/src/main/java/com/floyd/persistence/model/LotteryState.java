@@ -7,7 +7,6 @@ import java.util.List;
 
 @Data
 public class LotteryState {
-
     private String stateRegion;
     private List<LotteryGame> stateLotteryGames;
 }

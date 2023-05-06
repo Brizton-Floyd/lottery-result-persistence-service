@@ -10,5 +10,6 @@ import java.util.Optional;
 public interface DataService {
     Optional<StateGamesResponse> getStateData(StateGameAnalysisRequest stateGameAnalysisRequest) throws Exception;
     Optional<AllStateLottoGameResponse> getAllStateLotteryGames() throws Exception;
+    Optional<AllStateLottoGameResponse> getAllStateLotteryGamesV2() throws Exception;
     Optional<List<String>> getAllStateLotteryGames(String state) throws Exception;
 }

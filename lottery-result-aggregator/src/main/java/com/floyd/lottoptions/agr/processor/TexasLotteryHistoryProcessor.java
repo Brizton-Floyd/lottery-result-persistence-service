@@ -55,6 +55,7 @@ public class TexasLotteryHistoryProcessor implements HistoryProcessor {
                 break;
             case "Texas Two Step":
             case "Powerball":
+            case "Mega Millions":
                 serializeDrawResults(lottoGameName, drawResultsInCsvFormat, stateName, true, false, true);
                 break;
             case "Pick 3 Morning":
@@ -88,12 +89,16 @@ public class TexasLotteryHistoryProcessor implements HistoryProcessor {
             final LocalDate drawDate = getDrawDate(data);
             lotteryDraw.setDrawDate(drawDate);
 
-            int tail = data.length;
+            int tail = data.length - 1;
             if (includeBonus) {
                 int bonusNumber = Integer.parseInt(data[data.length - 1]);
                 lotteryDraw.setBonusNumber(bonusNumber);
                 --tail;
+                if (gameName.equals("Powerball") || gameName.equals("Mega Millions")) {
+                    --tail;
+                }
             }
+
 
             if (isFireBallIncluded) {
                 tail -= 2;
@@ -101,7 +106,7 @@ public class TexasLotteryHistoryProcessor implements HistoryProcessor {
 
             int headPtr = 4;
             try {
-                while (headPtr < tail) {
+                while (headPtr <= tail) {
                     lotteryDraw.getDrawResults().add(Integer.parseInt(data[headPtr++]));
                 }
 
@@ -109,7 +114,7 @@ public class TexasLotteryHistoryProcessor implements HistoryProcessor {
                     Collections.sort(lotteryDraw.getDrawResults());
 
                 lotteryGame.getLotteryDraws().add(lotteryDraw);
-
+                //Collections.sort(lotteryDraw.getDrawResults());
             } catch (NumberFormatException e) {
                 log.error("Error occurred while attempting to add winning number for lotto game: " + stateName + ": " + gameName);
             }
