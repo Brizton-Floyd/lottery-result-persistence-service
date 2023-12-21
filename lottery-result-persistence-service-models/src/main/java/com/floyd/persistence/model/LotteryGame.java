@@ -43,6 +43,9 @@ public class LotteryGame implements Serializable {
         if (fullName.equals("Cash Five") && "Texas".equals(stateName)) {
             maxNumber = 35;
         }
+        else if (fullName.equals("Mega Millions")) {
+            maxNumber = 70;
+        }
         if (fullName.equals("Easy 5")) {
             maxNumber = 37;
         }
