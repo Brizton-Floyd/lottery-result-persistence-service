@@ -69,6 +69,7 @@ public class LouisianaLotteryHistoryProcessor implements HistoryProcessor {
     LotteryGame lotteryGame = new LotteryGame();
     lotteryGame.setStateGameBelongsTo(stateName);
     lotteryGame.setFullName(gameName);
+    lotteryGame.setLotteryDraws(new ArrayList<>());
 
     for (String[] data : drawResultsInCsvFormat) {
       LotteryDraw lotteryDraw = new LotteryDraw();

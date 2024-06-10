@@ -2,6 +2,7 @@ com/floyd/persistence/model/Prizes.class
 com/floyd/persistence/model/LotteryState.class
 com/floyd/persistence/model/Values.class
 com/floyd/persistence/model/Results.class
+com/floyd/persistence/model/response/StateResponse.class
 com/floyd/persistence/model/LotteryDraw.class
 com/floyd/persistence/model/LotteryGame.class
 com/floyd/persistence/model/response/StateGamesResponse.class

@@ -2,16 +2,22 @@ package com.floyd.lottoptions.controller;
 
 import com.floyd.lottoptions.agr.polling.LotteryResultPollingService;
 import com.floyd.lottoptions.service.DataService;
+import com.floyd.persistence.model.LotteryGame;
+import com.floyd.persistence.model.LotteryState;
 import com.floyd.persistence.model.request.StateGameAnalysisRequest;
 import com.floyd.persistence.model.response.AllStateLottoGameResponse;
 import com.floyd.persistence.model.response.StateGamesResponse;
+import com.floyd.persistence.model.response.StateResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,6 +30,25 @@ public class PersistenceServiceController {
 
     public PersistenceServiceController(DataService lotteryDataService) {
         this.lotteryDataService = lotteryDataService;
+    }
+
+    @GetMapping("/states")
+    public Flux<StateResponse> getLotteryStates() {
+        List<LotteryState> states = lotteryDataService
+                .fetchStates();
+
+        StateResponse stateResponse = new StateResponse();
+        stateResponse.setData(states);
+
+        return Flux.just(stateResponse);
+    }
+
+    @GetMapping("/states/{stateName}/games")
+    public Flux<LotteryGame> getGames(@PathVariable String stateName) {
+        List<LotteryGame> lotteryGames = lotteryDataService
+                .fetchStateGames(stateName);
+
+        return Flux.fromIterable(lotteryGames);
     }
 
     @GetMapping("/all/state-games")

@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -83,6 +84,7 @@ public class TexasLotteryHistoryProcessor implements HistoryProcessor {
         LotteryGame lotteryGame = new LotteryGame();
         lotteryGame.setStateGameBelongsTo(stateName);
         lotteryGame.setFullName(gameName);
+        lotteryGame.setLotteryDraws(new ArrayList<>());
 
         for (String[] data : drawResultsInCsvFormat) {
             LotteryDraw lotteryDraw = new LotteryDraw();

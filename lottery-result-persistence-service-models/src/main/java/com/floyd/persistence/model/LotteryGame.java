@@ -19,7 +19,7 @@ public class LotteryGame implements Serializable {
     private Integer drawPositionCount;
     private Integer maxNumber;
     private Integer minNumber;
-    List<LotteryDraw> lotteryDraws = new ArrayList<>();
+    List<LotteryDraw> lotteryDraws;
 
     @Override
     public String toString() {

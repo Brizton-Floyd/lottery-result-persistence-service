@@ -9,11 +9,14 @@ import com.floyd.persistence.model.response.StateGamesResponse;
 import org.apache.commons.io.FileUtils;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.ObjectInputStream;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class LotteryDataService implements DataService {
@@ -52,6 +55,72 @@ public class LotteryDataService implements DataService {
             e.printStackTrace();
         }
         return Optional.of(stateGamesResponse);
+    }
+
+    @Override
+    public List<LotteryState> fetchStates() {
+        List<String> directoryNames = getNames("tmp/");
+
+        List<LotteryState> lotteryStates = new ArrayList<>();
+        for (String directoryName : directoryNames) {
+            LotteryState lotteryState = new LotteryState();
+            lotteryState.setStateRegion(directoryName);
+            lotteryStates.add(lotteryState);
+        }
+        return lotteryStates;
+    }
+
+    private static List<String> getNames(String directoryName) {
+        List<String> directoryNames = new ArrayList<>();
+        Path mainDir = Paths.get(directoryName);
+
+        try (Stream<Path> paths = Files.walk(mainDir, 1)) {
+            directoryNames = paths
+                    .filter(Files::isDirectory)
+                    .filter(path -> !path.equals(Paths.get(directoryName))) // Exclude the main directory itself
+                    .map(path -> path.getFileName().toString())
+                    .collect(Collectors.toList());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return directoryNames;
+    }
+
+    @Override
+    public List<LotteryGame> fetchStateGames(String stateName) {
+//        List<String> games = getNames();
+
+        // Create a File object for the specified directory
+        File directory = new File("tmp/" + stateName.toUpperCase() + "/");
+
+        // Create a FilenameFilter to filter .ser files
+        FilenameFilter serFilter = new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                return name.endsWith(".ser");
+            }
+        };
+
+        // Get all .ser files in the directory
+        File[] serFiles = directory.listFiles(serFilter);
+        List<LotteryGame> lotteryGames = new ArrayList<>();
+
+        // Check if the directory is empty or no .ser files found
+        if (serFiles == null || serFiles.length == 0) {
+            System.out.println("No .ser files found in the directory.");
+        } else {
+            // Print the names of the .ser files without the .ser extension
+            for (File file : serFiles) {
+                String fileName = file.getName();
+                String nameWithoutExtension = fileName.substring(0, fileName.lastIndexOf('.'));
+                LotteryGame lotteryGame = new LotteryGame();
+                lotteryGame.setFullName(nameWithoutExtension);
+                lotteryGames.add(lotteryGame);
+                System.out.println(nameWithoutExtension);
+            }
+        }
+
+        return lotteryGames;
     }
 
     @Override
