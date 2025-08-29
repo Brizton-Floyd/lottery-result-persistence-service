@@ -4,7 +4,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.Date;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 import com.floyd.lottoptions.agr.polling.LotteryResultPollingService;
 import org.slf4j.Logger;

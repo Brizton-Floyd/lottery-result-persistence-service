@@ -1,6 +1,10 @@
 server:
   port: 8001
 
+spring:
+  profiles:
+    active: h2
+
 us:
   state:
     regions:
@@ -99,11 +103,11 @@ urls:
           url: https://www.texaslottery.com/export/sites/lottery/Games/Powerball/Winning_Numbers/powerball.csv
         - name: Mega Millions
           url: https://www.texaslottery.com/export/sites/lottery/Games/Mega_Millions/Winning_Numbers/megamillions.csv
-    - name: Louisiana
-      gameInfo:
-        - name: Easy 5
-          url: https://louisianalottery.com/winning-numbers/pdf/easy-5
-        - name: Lotto
-          url: https://louisianalottery.com/winning-numbers/pdf/lotto
-        - name: Pick 5
-          url: https://louisianalottery.com/winning-numbers/pdf/pick-5
+#    - name: Louisiana
+#      gameInfo:
+#        - name: Easy 5
+#          url: https://louisianalottery.com/winning-numbers/pdf/easy-5
+#        - name: Lotto
+#          url: https://louisianalottery.com/winning-numbers/pdf/lotto
+#        - name: Pick 5
+#          url: https://louisianalottery.com/winning-numbers/pdf/pick-5

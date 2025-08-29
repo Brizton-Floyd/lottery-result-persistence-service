@@ -1,4 +1,8 @@
-/Users/briztonfloyd/Desktop/Lotto Application/lottery-result-persistence-service/lottery-result-persistence-server/src/main/java/com/floyd/lottoptions/service/impl/LotteryDataService.java
-/Users/briztonfloyd/Desktop/Lotto Application/lottery-result-persistence-service/lottery-result-persistence-server/src/main/java/com/floyd/lottoptions/server/LotteryResultPersistenceServiceApplication.java
+/Users/briztonfloyd/Desktop/Lotto Application/lottery-result-persistence-service/lottery-result-persistence-server/src/main/java/com/floyd/lottoptions/controller/LotteryTargetingController.java
+/Users/briztonfloyd/Desktop/Lotto Application/lottery-result-persistence-service/lottery-result-persistence-server/src/main/java/com/floyd/lottoptions/controller/LotteryTargetingSummaryController.java
 /Users/briztonfloyd/Desktop/Lotto Application/lottery-result-persistence-service/lottery-result-persistence-server/src/main/java/com/floyd/lottoptions/controller/PersistenceServiceController.java
+/Users/briztonfloyd/Desktop/Lotto Application/lottery-result-persistence-service/lottery-result-persistence-server/src/main/java/com/floyd/lottoptions/controller/response/LotteryTargetingResponse.java
+/Users/briztonfloyd/Desktop/Lotto Application/lottery-result-persistence-service/lottery-result-persistence-server/src/main/java/com/floyd/lottoptions/server/LotteryResultPersistenceServiceApplication.java
+/Users/briztonfloyd/Desktop/Lotto Application/lottery-result-persistence-service/lottery-result-persistence-server/src/main/java/com/floyd/lottoptions/server/config/H2DatabaseConfig.java
 /Users/briztonfloyd/Desktop/Lotto Application/lottery-result-persistence-service/lottery-result-persistence-server/src/main/java/com/floyd/lottoptions/service/DataService.java
+/Users/briztonfloyd/Desktop/Lotto Application/lottery-result-persistence-service/lottery-result-persistence-server/src/main/java/com/floyd/lottoptions/service/impl/LotteryDataService.java

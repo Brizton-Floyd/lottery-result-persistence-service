@@ -1,0 +1,10 @@
+com/floyd/lottoptions/persistence/entity/UserSessionEntity.class
+com/floyd/lottoptions/persistence/entity/PatternGroupEntity$PatternType.class
+com/floyd/lottoptions/persistence/repository/UserSessionRepository.class
+com/floyd/lottoptions/persistence/entity/LotteryConfigurationEntity.class
+com/floyd/lottoptions/persistence/LotteryDataRepository.class
+com/floyd/lottoptions/persistence/entity/HotNumberEntity.class
+com/floyd/lottoptions/persistence/repository/LotteryConfigurationRepository.class
+com/floyd/lottoptions/persistence/entity/PrizeStructureEntity.class
+com/floyd/lottoptions/persistence/repository/PatternGroupRepository.class
+com/floyd/lottoptions/persistence/entity/PatternGroupEntity.class

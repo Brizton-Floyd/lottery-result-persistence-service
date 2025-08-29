@@ -1,4 +1,12 @@
+com/floyd/lottoptions/server/config/H2DatabaseConfig.class
 com/floyd/lottoptions/service/impl/LotteryDataService.class
 com/floyd/lottoptions/service/DataService.class
-com/floyd/lottoptions/server/LotteryResultPersistenceServiceApplication.class
+com/floyd/lottoptions/controller/LotteryTargetingController.class
+com/floyd/lottoptions/controller/response/LotteryTargetingResponse$ConfigurationSummary.class
+com/floyd/lottoptions/service/impl/LotteryDataService$1.class
 com/floyd/lottoptions/controller/PersistenceServiceController.class
+com/floyd/lottoptions/controller/response/LotteryTargetingResponse.class
+com/floyd/lottoptions/controller/response/LotteryTargetingResponse$SessionSummary.class
+com/floyd/lottoptions/server/LotteryResultPersistenceServiceApplication.class
+com/floyd/lottoptions/controller/response/LotteryTargetingResponse$PatternSummary.class
+com/floyd/lottoptions/controller/LotteryTargetingSummaryController.class

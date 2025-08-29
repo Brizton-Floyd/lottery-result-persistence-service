@@ -91,15 +91,21 @@ public class TexasLotteryHistoryProcessor implements HistoryProcessor {
             final LocalDate drawDate = getDrawDate(data);
             lotteryDraw.setDrawDate(drawDate);
 
-            int tail = data.length - 1;
-            if (includeBonus) {
-                int bonusNumber = Integer.parseInt(data[data.length - 1]);
-                lotteryDraw.setBonusNumber(bonusNumber);
-                --tail;
-                if (gameName.equals("Powerball") || gameName.equals("Mega Millions")) {
+            int tail = 0;
+            try {
+                tail = data.length - 1;
+                if (includeBonus) {
+                    int bonusNumber = Integer.parseInt(data[data.length - 1]);
+                    lotteryDraw.setBonusNumber(bonusNumber);
                     --tail;
+                    if (gameName.equals("Powerball") || gameName.equals("Mega Millions")) {
+                        --tail;
+                    }
                 }
+            } catch (NumberFormatException e) {
+                log.error("Error occurred while attempting to add bonus number for lotto game: " + stateName + ": " + gameName);
             }
+
 
 
             if (isFireBallIncluded) {

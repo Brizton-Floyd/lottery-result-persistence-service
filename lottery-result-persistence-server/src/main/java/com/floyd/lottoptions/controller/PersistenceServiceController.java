@@ -94,7 +94,7 @@ public class PersistenceServiceController {
     }
 
     @PostMapping("/state/games")
-    ResponseEntity<StateGamesResponse> requestResponse(@Validated @RequestBody StateGameAnalysisRequest request) {
+    ResponseEntity<StateGamesResponse> requestResponse(@RequestBody StateGameAnalysisRequest request) {
         log.info("Received request: {}", request);
         try {
             final Optional<StateGamesResponse> stateData = lotteryDataService.getStateData(request);
