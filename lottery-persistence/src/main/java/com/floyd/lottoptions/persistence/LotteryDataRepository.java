@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,6 +61,20 @@ public class LotteryDataRepository {
         LotteryConfigurationEntity entity = convertToEntity(config);
         LotteryConfigurationEntity savedEntity = lotteryConfigRepository.save(entity);
         return convertToLotteryConfiguration(savedEntity);
+    }
+    
+    public PatternGroupDefinition savePatternGroupDefinition(PatternGroupDefinition patterns) {
+        LotteryConfigurationEntity lotteryConfig = lotteryConfigRepository.findById(patterns.getLotteryConfigId())
+                .orElseThrow(() -> new RuntimeException("Lottery configuration not found: " + patterns.getLotteryConfigId()));
+        
+        patternGroupRepository.deleteByLotteryConfigurationId(patterns.getLotteryConfigId());
+        
+        for (Map.Entry<PatternGroupDefinition.PatternType, PatternGroupDefinition.PatternGroup> entry : patterns.getGroups().entrySet()) {
+            PatternGroupEntity entity = convertToPatternGroupEntity(patterns, entry.getKey(), entry.getValue(), lotteryConfig);
+            patternGroupRepository.save(entity);
+        }
+        
+        return patterns;
     }
     
     public String saveUserSession(UserRequest userRequest) {
@@ -203,5 +218,51 @@ public class LotteryDataRepository {
         }
         
         return userRequest;
+    }
+    
+    private PatternGroupEntity convertToPatternGroupEntity(PatternGroupDefinition patterns, 
+                                                          PatternGroupDefinition.PatternType patternType, 
+                                                          PatternGroupDefinition.PatternGroup group, 
+                                                          LotteryConfigurationEntity lotteryConfig) {
+        PatternGroupEntity entity = new PatternGroupEntity();
+        entity.setLotteryConfiguration(lotteryConfig);
+        entity.setPatternType(PatternGroupEntity.PatternType.valueOf(patternType.name()));
+        entity.setEfficiencyMultiplier(BigDecimal.valueOf(group.getEfficiencyMultiplier()));
+        entity.setTotalAnalyzedDraws(patterns.getTotalAnalyzedDraws());
+        entity.setLastAnalysisDate(patterns.getLastAnalysisDate());
+        entity.setLastUpdated(group.getLastUpdated());
+        return entity;
+    }
+    
+    @Scheduled(cron = "0 0 2 * * ?") // Daily at 2 AM
+    @Transactional
+    public void cleanupOldUserSessions() {
+        LocalDateTime cutoffDate = LocalDateTime.now().minusDays(90);
+        int deletedCount = userSessionRepository.deleteSessionsOlderThan(cutoffDate);
+        log.info("Automated cleanup: Deleted {} user sessions older than 90 days", deletedCount);
+    }
+    
+    @Scheduled(cron = "0 30 2 * * ?") // Daily at 2:30 AM
+    @Transactional  
+    public void cleanupOldPatternGroups() {
+        LocalDateTime cutoffDate = LocalDateTime.now().minusDays(180);
+        log.info("Automated cleanup: Checking for stale pattern groups older than 180 days");
+        
+        List<PatternGroupDefinition> allPatterns = patternGroupRepository.findAll().stream()
+            .collect(Collectors.groupingBy(pg -> pg.getLotteryConfiguration().getId()))
+            .entrySet().stream()
+            .filter(entry -> !entry.getValue().isEmpty() && 
+                    entry.getValue().get(0).getLastAnalysisDate() != null &&
+                    entry.getValue().get(0).getLastAnalysisDate().isBefore(cutoffDate))
+            .map(entry -> convertToPatternGroupDefinition(entry.getValue()))
+            .collect(Collectors.toList());
+            
+        if (!allPatterns.isEmpty()) {
+            log.info("Found {} stale pattern group sets to clean up", allPatterns.size());
+            for (PatternGroupDefinition pattern : allPatterns) {
+                patternGroupRepository.deleteByLotteryConfigurationId(pattern.getLotteryConfigId());
+                log.debug("Deleted stale patterns for lottery config: {}", pattern.getLotteryConfigId());
+            }
+        }
     }
 }

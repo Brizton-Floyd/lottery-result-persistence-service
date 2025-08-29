@@ -43,6 +43,13 @@ public class LotteryTargetingController {
         return patterns.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
 
+    @PostMapping("/patterns/{configId}")
+    public ResponseEntity<String> storePatternGroups(@PathVariable String configId, @RequestBody PatternGroupDefinition patterns) {
+        log.debug("Storing pattern groups for lottery config: {}", configId);
+        lotteryDataRepository.savePatternGroupDefinition(patterns);
+        return ResponseEntity.ok("Pattern groups stored successfully for config: " + configId);
+    }
+
     @PostMapping("/configurations")
     public ResponseEntity<LotteryConfiguration> createLotteryConfiguration(@RequestBody LotteryConfiguration config) {
         log.debug("Creating new lottery configuration: {}", config.getName());

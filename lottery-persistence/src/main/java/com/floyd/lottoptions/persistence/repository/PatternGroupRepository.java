@@ -25,4 +25,6 @@ public interface PatternGroupRepository extends JpaRepository<PatternGroupEntity
     
     @Query("SELECT pg FROM PatternGroupEntity pg WHERE pg.efficiencyMultiplier > :minMultiplier ORDER BY pg.efficiencyMultiplier DESC")
     List<PatternGroupEntity> findHighEfficiencyPatterns(@Param("minMultiplier") Double minMultiplier);
+    
+    void deleteByLotteryConfigurationId(String lotteryConfigId);
 }
