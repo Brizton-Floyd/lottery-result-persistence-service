@@ -20,6 +20,10 @@ public class UserRequest {
         PATTERN_BASED,
         FREQUENCY_BASED,
         HYBRID,
-        RANDOM_WEIGHTED
+        RANDOM_WEIGHTED,
+        QUALITY_EVALUATION,
+        BALANCED,
+        CONSERVATIVE,
+        AGGRESSIVE
     }
 }

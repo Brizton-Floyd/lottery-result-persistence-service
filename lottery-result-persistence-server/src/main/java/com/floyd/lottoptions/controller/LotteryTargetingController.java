@@ -3,6 +3,7 @@ package com.floyd.lottoptions.controller;
 import com.floyd.lottoptions.datamodels.LotteryConfiguration;
 import com.floyd.lottoptions.datamodels.PatternGroupDefinition;
 import com.floyd.lottoptions.datamodels.UserRequest;
+import com.floyd.lottoptions.datamodels.impl.DefaultPatternGroupDefinition;
 import com.floyd.lottoptions.persistence.LotteryDataRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +45,7 @@ public class LotteryTargetingController {
     }
 
     @PostMapping("/patterns/{configId}")
-    public ResponseEntity<String> storePatternGroups(@PathVariable String configId, @RequestBody PatternGroupDefinition patterns) {
+    public ResponseEntity<String> storePatternGroups(@PathVariable String configId, @RequestBody DefaultPatternGroupDefinition patterns) {
         log.debug("Storing pattern groups for lottery config: {}", configId);
         lotteryDataRepository.savePatternGroupDefinition(patterns);
         return ResponseEntity.ok("Pattern groups stored successfully for config: " + configId);

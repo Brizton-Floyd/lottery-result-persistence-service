@@ -178,9 +178,10 @@ public class LotteryDataRepository {
     private UserSessionEntity convertToUserSessionEntity(UserRequest userRequest) {
         UserSessionEntity entity = new UserSessionEntity();
         entity.setSessionId(userRequest.getSessionId());
-        entity.setTargetTier(userRequest.getTargetTier());
+        entity.setTargetTier(userRequest.getTargetTier() != null ? userRequest.getTargetTier() : "tier_1");
         entity.setNumberOfTickets(userRequest.getNumberOfTickets());
-        entity.setGenerationStrategy(userRequest.getGenerationStrategy().name());
+        entity.setGenerationStrategy(userRequest.getGenerationStrategy() != null ? 
+                                   userRequest.getGenerationStrategy().name() : "PATTERN_BASED");
         entity.setBudget(userRequest.getBudget());
         
         try {
@@ -189,6 +190,10 @@ public class LotteryDataRepository {
             }
         } catch (JsonProcessingException e) {
             log.error("Error serializing preferences", e);
+        }
+        
+        if (userRequest.getLotteryConfigId() == null || userRequest.getLotteryConfigId().trim().isEmpty()) {
+            throw new IllegalArgumentException("Lottery configuration ID cannot be null or empty");
         }
         
         LotteryConfigurationEntity lotteryConfig = lotteryConfigRepository.findById(userRequest.getLotteryConfigId())
