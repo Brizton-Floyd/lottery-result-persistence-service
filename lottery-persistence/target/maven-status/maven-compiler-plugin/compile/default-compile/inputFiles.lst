@@ -3,7 +3,10 @@
 /Users/briztonfloyd/Desktop/Lotto Application/lottery-result-persistence-service/lottery-persistence/src/main/java/com/floyd/lottoptions/persistence/entity/LotteryConfigurationEntity.java
 /Users/briztonfloyd/Desktop/Lotto Application/lottery-result-persistence-service/lottery-persistence/src/main/java/com/floyd/lottoptions/persistence/entity/PatternGroupEntity.java
 /Users/briztonfloyd/Desktop/Lotto Application/lottery-result-persistence-service/lottery-persistence/src/main/java/com/floyd/lottoptions/persistence/entity/PrizeStructureEntity.java
+/Users/briztonfloyd/Desktop/Lotto Application/lottery-result-persistence-service/lottery-persistence/src/main/java/com/floyd/lottoptions/persistence/entity/ProvenCombinationEntity.java
 /Users/briztonfloyd/Desktop/Lotto Application/lottery-result-persistence-service/lottery-persistence/src/main/java/com/floyd/lottoptions/persistence/entity/UserSessionEntity.java
+/Users/briztonfloyd/Desktop/Lotto Application/lottery-result-persistence-service/lottery-persistence/src/main/java/com/floyd/lottoptions/persistence/repository/HotNumberRepository.java
 /Users/briztonfloyd/Desktop/Lotto Application/lottery-result-persistence-service/lottery-persistence/src/main/java/com/floyd/lottoptions/persistence/repository/LotteryConfigurationRepository.java
 /Users/briztonfloyd/Desktop/Lotto Application/lottery-result-persistence-service/lottery-persistence/src/main/java/com/floyd/lottoptions/persistence/repository/PatternGroupRepository.java
+/Users/briztonfloyd/Desktop/Lotto Application/lottery-result-persistence-service/lottery-persistence/src/main/java/com/floyd/lottoptions/persistence/repository/ProvenCombinationRepository.java
 /Users/briztonfloyd/Desktop/Lotto Application/lottery-result-persistence-service/lottery-persistence/src/main/java/com/floyd/lottoptions/persistence/repository/UserSessionRepository.java

@@ -78,8 +78,8 @@ INSERT INTO hot_numbers (pattern_group_id, number_pattern, frequency_count) VALU
 (10, '02,12,22,27,32', 58);
 
 -- Sample proven combinations
-INSERT INTO proven_combinations (lottery_config_id, combination_numbers, tier_achieved, draw_date, confidence_score, times_appeared) VALUES
-('powerball', '07,14,21,35,69', 'tier5', '2024-01-15', 0.8500, 1),
-('mega_millions', '03,17,31,45,70', 'tier4', '2024-02-03', 0.7200, 1),
-('lotto_texas', '12,23,34,45,54', 'tier5', '2024-01-28', 0.9100, 1),
-('cash_five', '05,15,25,30,35', 'tier5', '2024-02-10', 0.9500, 1);
+INSERT INTO proven_combinations (lottery_configuration_id, combination_numbers, frequency_count, last_drawn_date, win_count, tier_performance, quality_score) VALUES
+('powerball', '07,14,21,35,69', 45, '2024-01-15', 1, '{"tier5": 1}', 85.00),
+('mega_millions', '03,17,31,45,70', 48, '2024-02-03', 1, '{"tier4": 1}', 72.00),
+('lotto_texas', '12,23,34,45,54', 52, '2024-01-28', 1, '{"tier5": 1}', 91.00),
+('cash_five', '05,15,25,30,35', 65, '2024-02-10', 1, '{"tier5": 1}', 95.00);

@@ -5,6 +5,16 @@ spring:
   profiles:
     active: h2
 
+# Lottery targeting system cleanup configuration
+lottery:
+  cleanup:
+    enabled: true
+    user-sessions-retention-days: 90
+    pattern-groups-retention-days: 180
+    schedule:
+      sessions: "0 0 2 * * ?"    # Daily at 2:00 AM
+      patterns: "0 30 2 * * ?"   # Daily at 2:30 AM
+
 us:
   state:
     regions:

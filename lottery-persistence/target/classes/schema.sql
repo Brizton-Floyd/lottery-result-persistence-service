@@ -51,14 +51,16 @@ CREATE TABLE IF NOT EXISTS hot_numbers (
 -- Proven Combinations Table
 CREATE TABLE IF NOT EXISTS proven_combinations (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    lottery_config_id VARCHAR(50) NOT NULL,
+    lottery_configuration_id VARCHAR(50) NOT NULL,
     combination_numbers VARCHAR(255) NOT NULL,
-    tier_achieved VARCHAR(20) NOT NULL,
-    draw_date DATE,
-    confidence_score DECIMAL(5,4) DEFAULT 0.0000,
-    times_appeared INTEGER DEFAULT 1,
+    frequency_count INTEGER DEFAULT 0,
+    last_drawn_date DATE,
+    win_count INTEGER DEFAULT 0,
+    tier_performance VARCHAR(500), -- JSON string: {"tier_1": 2, "tier_2": 5}
+    quality_score DECIMAL(5,2) DEFAULT 0.00,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (lottery_config_id) REFERENCES lottery_configurations(id)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (lottery_configuration_id) REFERENCES lottery_configurations(id)
 );
 
 -- User Sessions Table
@@ -101,11 +103,36 @@ CREATE TABLE IF NOT EXISTS lottery_tickets (
     FOREIGN KEY (ticket_set_id) REFERENCES generated_ticket_sets(id)
 );
 
+-- Lottery Draws Table
+CREATE TABLE IF NOT EXISTS lottery_draws (
+    draw_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    lottery_configuration_id VARCHAR(50) NOT NULL,
+    draw_date DATE NOT NULL,
+    draw_number INTEGER,
+    numbers VARCHAR(255) NOT NULL, -- Comma-separated numbers
+    FOREIGN KEY (lottery_configuration_id) REFERENCES lottery_configurations(id)
+);
+
+-- Number Frequencies Table
+CREATE TABLE IF NOT EXISTS number_frequencies (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    lottery_configuration_id VARCHAR(50) NOT NULL,
+    frequencies TEXT NOT NULL, -- JSON string: {"1": 0.0285, "2": 0.0312}
+    total_draws_analyzed INTEGER DEFAULT 0,
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (lottery_configuration_id) REFERENCES lottery_configurations(id),
+    UNIQUE(lottery_configuration_id)
+);
+
 -- Indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_pattern_groups_lottery_config ON pattern_groups(lottery_config_id);
 CREATE INDEX IF NOT EXISTS idx_hot_numbers_pattern_group ON hot_numbers(pattern_group_id);
-CREATE INDEX IF NOT EXISTS idx_proven_combinations_lottery_config ON proven_combinations(lottery_config_id);
-CREATE INDEX IF NOT EXISTS idx_proven_combinations_tier ON proven_combinations(tier_achieved);
+CREATE INDEX IF NOT EXISTS idx_proven_combinations_lottery_config ON proven_combinations(lottery_configuration_id);
+CREATE INDEX IF NOT EXISTS idx_proven_combinations_quality_score ON proven_combinations(quality_score);
+CREATE INDEX IF NOT EXISTS idx_proven_combinations_win_count ON proven_combinations(win_count);
 CREATE INDEX IF NOT EXISTS idx_user_sessions_lottery_config ON user_sessions(lottery_config_id);
 CREATE INDEX IF NOT EXISTS idx_generated_ticket_sets_session ON generated_ticket_sets(session_id);
 CREATE INDEX IF NOT EXISTS idx_lottery_tickets_set ON lottery_tickets(ticket_set_id);
+CREATE INDEX IF NOT EXISTS idx_lottery_draws_config ON lottery_draws(lottery_configuration_id);
+CREATE INDEX IF NOT EXISTS idx_lottery_draws_date ON lottery_draws(draw_date);
+CREATE INDEX IF NOT EXISTS idx_number_frequencies_config ON number_frequencies(lottery_configuration_id);

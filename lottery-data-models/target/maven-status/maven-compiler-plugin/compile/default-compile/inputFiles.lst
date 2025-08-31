@@ -1,6 +1,8 @@
 /Users/briztonfloyd/Desktop/Lotto Application/lottery-result-persistence-service/lottery-data-models/src/main/java/com/floyd/lottoptions/datamodels/GeneratedTicketSet.java
+/Users/briztonfloyd/Desktop/Lotto Application/lottery-result-persistence-service/lottery-data-models/src/main/java/com/floyd/lottoptions/datamodels/HotNumber.java
 /Users/briztonfloyd/Desktop/Lotto Application/lottery-result-persistence-service/lottery-data-models/src/main/java/com/floyd/lottoptions/datamodels/LotteryConfiguration.java
 /Users/briztonfloyd/Desktop/Lotto Application/lottery-result-persistence-service/lottery-data-models/src/main/java/com/floyd/lottoptions/datamodels/PatternGroupDefinition.java
+/Users/briztonfloyd/Desktop/Lotto Application/lottery-result-persistence-service/lottery-data-models/src/main/java/com/floyd/lottoptions/datamodels/ProvenCombination.java
 /Users/briztonfloyd/Desktop/Lotto Application/lottery-result-persistence-service/lottery-data-models/src/main/java/com/floyd/lottoptions/datamodels/UserRequest.java
 /Users/briztonfloyd/Desktop/Lotto Application/lottery-result-persistence-service/lottery-data-models/src/main/java/com/floyd/lottoptions/datamodels/impl/DefaultLotteryConfiguration.java
 /Users/briztonfloyd/Desktop/Lotto Application/lottery-result-persistence-service/lottery-data-models/src/main/java/com/floyd/lottoptions/datamodels/impl/DefaultPatternGroupDefinition.java

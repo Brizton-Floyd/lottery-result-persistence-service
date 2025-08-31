@@ -3,6 +3,7 @@ com/floyd/lottoptions/datamodels/UserRequest.class
 com/floyd/lottoptions/datamodels/GeneratedTicketSet$QualityMetrics.class
 com/floyd/lottoptions/datamodels/impl/DefaultLotteryConfiguration.class
 com/floyd/lottoptions/datamodels/impl/DefaultPatternGroupDefinition$DefaultPatternGroup.class
+com/floyd/lottoptions/datamodels/ProvenCombination.class
 com/floyd/lottoptions/datamodels/LotteryConfiguration.class
 com/floyd/lottoptions/datamodels/PatternGroupDefinition$PatternType.class
 com/floyd/lottoptions/datamodels/GeneratedTicketSet$GenerationMetadata.class
@@ -13,6 +14,7 @@ com/floyd/lottoptions/datamodels/LotteryConfiguration$NumberRange.class
 com/floyd/lottoptions/datamodels/PatternGroupDefinition$PatternGroup.class
 com/floyd/lottoptions/datamodels/impl/DefaultPatternGroupDefinition.class
 com/floyd/lottoptions/datamodels/impl/DefaultLotteryConfiguration$DefaultNumberRange.class
+com/floyd/lottoptions/datamodels/HotNumber.class
 com/floyd/lottoptions/datamodels/UserRequest$GenerationStrategy.class
 com/floyd/lottoptions/datamodels/LotteryConfiguration$PrizeDetails.class
 com/floyd/lottoptions/datamodels/GeneratedTicketSet$LotteryTicket.class
