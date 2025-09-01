@@ -446,6 +446,11 @@ public class LotteryDataRepository {
     
     // Lottery Ticket Methods
     public LotteryTicket saveLotteryTicket(LotteryTicket ticket) {
+        // Validate that the ticket set exists
+        if (ticket.getTicketSetId() != null && !generatedTicketSetRepository.existsById(ticket.getTicketSetId())) {
+            throw new IllegalArgumentException("GeneratedTicketSet with ID " + ticket.getTicketSetId() + " does not exist");
+        }
+        
         LotteryTicketEntity entity = convertToLotteryTicketEntity(ticket);
         LotteryTicketEntity savedEntity = lotteryTicketRepository.save(entity);
         return convertToLotteryTicket(savedEntity);

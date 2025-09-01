@@ -24,6 +24,7 @@ public class UserRequest {
         QUALITY_EVALUATION,
         BALANCED,
         CONSERVATIVE,
-        AGGRESSIVE
+        AGGRESSIVE,
+        TEMPLATE_MATRIX
     }
 }
