@@ -7,6 +7,8 @@ import com.floyd.persistence.model.request.StateGameAnalysisRequest;
 import com.floyd.persistence.model.response.AllStateLottoGameResponse;
 import com.floyd.persistence.model.response.StateGamesResponse;
 import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -20,6 +22,8 @@ import java.util.stream.Stream;
 
 @Service
 public class LotteryDataService implements DataService {
+
+    private static final Logger log = LoggerFactory.getLogger(LotteryDataService.class);
 
 
     @Override
@@ -211,6 +215,17 @@ public class LotteryDataService implements DataService {
                         lotteryGame.setStateGameBelongsTo(currentState);
                         lotteryGame.setMinNumber(game.getMinNumber());
                         lotteryGame.setMaxNumber(game.getMaxNumber());
+                        // FR-020-A: copy drawPositionCount from the deserialized .ser game.
+                        // This field is set by the aggregator processors before serialization and is the
+                        // authoritative source for both the v1 (/all/state-games) and v2 (/all/v2/state-games)
+                        // catalog paths, both of which call this method via populate(). (FR-020-B)
+                        if (game.getDrawPositionCount() != null) {
+                            lotteryGame.setDrawPositionCount(game.getDrawPositionCount());
+                        } else {
+                            log.warn("drawPositionCount is null for game '{}' in state '{}' — " +
+                                     ".ser file may be stale and require re-aggregation.",
+                                     game.getFullName(), currentState);
+                        }
                         lotteryGame.setLotteryDraws(null);
 
                         lotteryGameList.add(lotteryGame);
