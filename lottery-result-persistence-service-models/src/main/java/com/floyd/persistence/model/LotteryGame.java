@@ -12,6 +12,13 @@ import java.util.List;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class LotteryGame implements Serializable {
+    /**
+     * Pinned to the value the JVM computed implicitly for this class as of the first
+     * serialized {@code .ser} files, so existing persisted games keep deserializing and
+     * future non-structural changes no longer risk {@link java.io.InvalidClassException}.
+     */
+    private static final long serialVersionUID = 8661963461273098644L;
+
     private String fullName;
     private String stateGameBelongsTo;
     private LocalDate dateLastUpdated;

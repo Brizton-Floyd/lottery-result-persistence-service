@@ -17,7 +17,8 @@ import java.util.Collections;
 import java.util.List;
 
 public class TexasLotteryHistoryProcessor implements HistoryProcessor {
-    protected static final Logger log = LoggerFactory.getLogger(LotteryResultPollingService.class);
+    protected static final Logger log = LoggerFactory.getLogger(TexasLotteryHistoryProcessor.class);
+    private static final int MAX_DRAWS = 8000;
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("MM-dd-yyyy");
     private final FileReader fileReader;
     private final LotteryGameSerializer lotteryGameSerializer;
@@ -29,19 +30,21 @@ public class TexasLotteryHistoryProcessor implements HistoryProcessor {
 
     @Override
     public void getHistoricalData(String stateName, List<LotteryUrlConfig.GameInfo> gameInfo) throws Exception{
-        log.info("Updating Results Lotto Games for: " + stateName);
-
+        log.info("Updating Results Lotto Games for: {}", stateName);
         for (LotteryUrlConfig.GameInfo info : gameInfo) {
-            List<String[]> drawResultsInCsvFormat = this.fileReader.getFileContents(info);
-            if (drawResultsInCsvFormat.size() > 8000) {
-                // This will help ensure the serialization of only the past 8000 lottery draw results
-                drawResultsInCsvFormat = drawResultsInCsvFormat.subList(drawResultsInCsvFormat.size() - 8000,
-                        drawResultsInCsvFormat.size());
-            }
-
-            // Begin the serialization process
-            processDrawResultsForGivenGame(info.getName(), stateName, drawResultsInCsvFormat);
+            processGame(stateName, info);
         }
+    }
+
+    @Override
+    public void processGame(String stateName, LotteryUrlConfig.GameInfo info) throws Exception {
+        List<String[]> drawResultsInCsvFormat = this.fileReader.getFileContents(info);
+        if (drawResultsInCsvFormat.size() > MAX_DRAWS) {
+            // Serialize only the most recent MAX_DRAWS results.
+            drawResultsInCsvFormat = drawResultsInCsvFormat.subList(drawResultsInCsvFormat.size() - MAX_DRAWS,
+                    drawResultsInCsvFormat.size());
+        }
+        processDrawResultsForGivenGame(info.getName(), stateName, drawResultsInCsvFormat);
     }
 
     private void processDrawResultsForGivenGame(String lottoGameName, String stateName, List<String[]> drawResultsInCsvFormat) {

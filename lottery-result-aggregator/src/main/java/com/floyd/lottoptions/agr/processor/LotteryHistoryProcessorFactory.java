@@ -4,6 +4,7 @@ import com.floyd.lottoptions.agr.documentreaders.FileReader;
 import com.floyd.lottoptions.agr.documentreaders.FileReaderFactory;
 import com.floyd.lottoptions.agr.documentreaders.FileReaderType;
 import com.floyd.lottoptions.agr.persistence.LotteryGameSerializer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -13,18 +14,27 @@ import java.util.Map;
 public class LotteryHistoryProcessorFactory {
 
     private final FileReaderFactory fileReaderFactory;
+    private final String storageBaseDir;
 
-    public LotteryHistoryProcessorFactory(FileReaderFactory fileReaderFactory) {
+    public LotteryHistoryProcessorFactory(FileReaderFactory fileReaderFactory,
+                                          @Value("${lottery.storage.base-dir:tmp}") String storageBaseDir) {
         this.fileReaderFactory = fileReaderFactory;
+        this.storageBaseDir = storageBaseDir;
     }
 
+    /**
+     * Returns a processor for the given (already upper-cased) state name, or {@code null}
+     * if the state is unknown or unsupported. Never throws on an unmodeled state.
+     */
     public HistoryProcessor getLottoHistoryProcessor(String str) {
-        State state = State.valueOf(str);
+        State state = State.valueOfName(str);
         switch (state) {
             case TEXAS:
-                return new TexasLotteryHistoryProcessor(getFileReader(FileReaderType.CSV, str), new LotteryGameSerializer());
+                return new TexasLotteryHistoryProcessor(getFileReader(FileReaderType.CSV, str),
+                        new LotteryGameSerializer(storageBaseDir));
             case LOUISIANA:
-                return new LouisianaLotteryHistoryProcessor(getFileReader(FileReaderType.PDF, str), new LotteryGameSerializer());
+                return new LouisianaLotteryHistoryProcessor(getFileReader(FileReaderType.PDF, str),
+                        new LotteryGameSerializer(storageBaseDir));
             default:
                 return null;
         }

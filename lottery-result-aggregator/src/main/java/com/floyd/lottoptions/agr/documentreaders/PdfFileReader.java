@@ -21,7 +21,7 @@ import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.pdfbox.text.TextPosition;
 
 public class PdfFileReader implements FileReader {
-    private static List<String> lines = new ArrayList<>();
+    private final List<String> lines = new ArrayList<>();
     private String lottoStateName;
 
     @Override
@@ -30,7 +30,6 @@ public class PdfFileReader implements FileReader {
         PDDocument document = null;
 
 
-        // clear the lines array since its static
         lines.clear();
 
         try {
@@ -64,21 +63,21 @@ public class PdfFileReader implements FileReader {
     }
 
     private byte[] getPdfByteContent(String url) throws IOException{
-        InputStream input = new URL(url).openStream();
+        final java.net.URLConnection connection = new URL(url).openConnection();
+        connection.setConnectTimeout(HttpTimeouts.CONNECT_TIMEOUT_MS);
+        connection.setReadTimeout(HttpTimeouts.READ_TIMEOUT_MS);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        byte[] buf = new byte[131072];
-        int n = 0;
-        while (-1!=(n=input.read(buf)))
-        {
-            out.write(buf, 0, n);
+        try (InputStream input = connection.getInputStream()) {
+            byte[] buf = new byte[131072];
+            int n;
+            while (-1 != (n = input.read(buf))) {
+                out.write(buf, 0, n);
+            }
         }
-        out.close();
-        input.close();
-
         return out.toByteArray();
     }
 
-    private static class GetCharLocationAndSize extends PDFTextStripper {
+    private class GetCharLocationAndSize extends PDFTextStripper {
 
         public GetCharLocationAndSize() throws IOException {
         }

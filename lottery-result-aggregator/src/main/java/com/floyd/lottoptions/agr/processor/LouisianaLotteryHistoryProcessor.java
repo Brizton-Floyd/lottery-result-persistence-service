@@ -34,9 +34,6 @@ public class LouisianaLotteryHistoryProcessor implements HistoryProcessor {
     log.info("Updating Results Lotto Games for: " + name);
 
     for (LotteryUrlConfig.GameInfo info : gameInfo) {
-      if (info.getName().equals("Pick 5")) {
-        System.out.println();
-      }
       List<String[]> drawResultsInCsvFormat = this.fileReader.getFileContents(info);
       if (drawResultsInCsvFormat.size() > 8000) {
         // This will help ensure the serialization of only the past 8000 lottery draw results

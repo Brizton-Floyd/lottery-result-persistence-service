@@ -44,8 +44,8 @@ public class DrawResultJob {
         try {
             lotteryResultPollingService.pollForUpdatesToDrawResults();
         } catch (Exception e) {
-            log.debug(e.getMessage());
-        } 
+            log.error("Draw-result poll failed", e);
+        }
         finally {
             logNextRunTime();
         }

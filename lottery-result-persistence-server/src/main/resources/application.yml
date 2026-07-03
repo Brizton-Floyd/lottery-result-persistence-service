@@ -1,6 +1,32 @@
 server:
   port: 8001
 
+lottery:
+  storage:
+    # Base directory for the .ser draw store. Relative to the process working directory.
+    base-dir: tmp
+  polling:
+    # Bounded parallelism for the draw-result poll.
+    pool-size: 4
+
+resilience4j:
+  retry:
+    instances:
+      lotteryFetch:
+        max-attempts: 3
+        wait-duration: 2s
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - java.io.IOException
+  ratelimiter:
+    instances:
+      lotteryFetch:
+        # Be polite to the upstream lottery source: at most N downloads per refresh window.
+        limit-for-period: 4
+        limit-refresh-period: 1s
+        timeout-duration: 30s
+
 us:
   state:
     regions:

@@ -6,4 +6,14 @@ import java.util.List;
 
 public interface HistoryProcessor {
     void getHistoricalData(String name, List<LotteryUrlConfig.GameInfo> gameInfo) throws Exception;
+
+    /**
+     * Process a single game. This is the unit the poller parallelises and wraps with
+     * retry / rate-limiting, so one game's failure can be isolated from the rest.
+     * The default delegates to {@link #getHistoricalData} with a one-element list for
+     * processors that have not specialised it.
+     */
+    default void processGame(String stateName, LotteryUrlConfig.GameInfo gameInfo) throws Exception {
+        getHistoricalData(stateName, List.of(gameInfo));
+    }
 }

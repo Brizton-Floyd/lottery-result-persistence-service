@@ -6,67 +6,81 @@ import com.floyd.persistence.model.LotteryState;
 import com.floyd.persistence.model.request.StateGameAnalysisRequest;
 import com.floyd.persistence.model.response.AllStateLottoGameResponse;
 import com.floyd.persistence.model.response.StateGamesResponse;
-import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Reads the {@code .ser} draw store and serves the catalog / game endpoints.
+ *
+ * <p>The expensive read methods are cached ({@link Cacheable}); the cache is invalidated
+ * whenever a poll completes (see the read-side cache evictor). The storage root is
+ * configurable via {@code lottery.storage.base-dir} (default {@code tmp}), which also gives
+ * tests a seam to point the real production code at a temp directory.
+ */
 @Service
 public class LotteryDataService implements DataService {
 
     private static final Logger log = LoggerFactory.getLogger(LotteryDataService.class);
 
+    /** Cache names, invalidated together on {@code PollCompletedEvent}. */
+    public static final String CACHE_GAME_DATA = "gameData";
+    public static final String CACHE_CATALOG_V1 = "catalogV1";
+    public static final String CACHE_CATALOG_V2 = "catalogV2";
+    public static final String CACHE_STATE_GAME_NAMES = "stateGameNames";
+    public static final String CACHE_STATES = "states";
+    public static final String CACHE_STATE_GAMES = "stateGames";
 
-    @Override
-    public Optional<StateGamesResponse> getStateData(StateGameAnalysisRequest stateGameAnalysisRequest) throws Exception {
-        final String gameName = stateGameAnalysisRequest.getGameName();
-        final String stateName = stateGameAnalysisRequest.getStateName();
-        StateGamesResponse stateGamesResponse = new StateGamesResponse();
+    private final String baseDir;
 
-        File root = new File("tmp/" + stateName.toUpperCase());
-        String fileName = gameName + ".ser";
-        try {
-            Collection<File> files = FileUtils.listFiles(root, null, true);
-
-            for (Iterator<File> iterator = files.iterator(); iterator.hasNext();) {
-                File file = iterator.next();
-                if (file.getName().equals(fileName)) {
-
-                    FileInputStream fileIn = new FileInputStream(root + "/" + fileName);
-                    ObjectInputStream in = new ObjectInputStream(fileIn);
-                    LotteryGame lotteryGame = null;
-                    try {
-                        lotteryGame = (LotteryGame) in.readObject();
-                        stateGamesResponse.setLotteryGame(lotteryGame);
-                    } catch (ClassNotFoundException ee) {
-                        ee.printStackTrace();
-                    }
-                    in.close();
-                    fileIn.close();
-                    break;
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return Optional.of(stateGamesResponse);
+    public LotteryDataService(@Value("${lottery.storage.base-dir:tmp}") String baseDir) {
+        this.baseDir = (baseDir == null || baseDir.isBlank()) ? "tmp" : baseDir;
     }
 
     @Override
-    public List<LotteryState> fetchStates() {
-        List<String> directoryNames = getNames("tmp/");
+    @Cacheable(cacheNames = CACHE_GAME_DATA, key = "#stateGameAnalysisRequest.stateName + '::' + #stateGameAnalysisRequest.gameName")
+    public Optional<StateGamesResponse> getStateData(StateGameAnalysisRequest stateGameAnalysisRequest) throws Exception {
+        final String gameName = stateGameAnalysisRequest.getGameName();
+        final String stateName = stateGameAnalysisRequest.getStateName();
+        final StateGamesResponse response = new StateGamesResponse();
 
+        final Path serFile = Paths.get(baseDir, stateName.toUpperCase(), gameName + ".ser");
+        if (!Files.isRegularFile(serFile)) {
+            return Optional.of(response);
+        }
+
+        try (ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(Files.newInputStream(serFile)))) {
+            response.setLotteryGame((LotteryGame) in.readObject());
+        } catch (IOException | ClassNotFoundException e) {
+            log.error("Failed to read game '{}' for state '{}' from {}", gameName, stateName, serFile, e);
+            throw e;
+        }
+        return Optional.of(response);
+    }
+
+    @Override
+    @Cacheable(CACHE_STATES)
+    public List<LotteryState> fetchStates() {
         List<LotteryState> lotteryStates = new ArrayList<>();
-        for (String directoryName : directoryNames) {
+        for (String directoryName : listStateDirectories()) {
             LotteryState lotteryState = new LotteryState();
             lotteryState.setStateRegion(directoryName);
             lotteryStates.add(lotteryState);
@@ -74,83 +88,62 @@ public class LotteryDataService implements DataService {
         return lotteryStates;
     }
 
-    private static List<String> getNames(String directoryName) {
-        List<String> directoryNames = new ArrayList<>();
-        Path mainDir = Paths.get(directoryName);
-
-        try (Stream<Path> paths = Files.walk(mainDir, 1)) {
-            directoryNames = paths
+    private List<String> listStateDirectories() {
+        final Path root = Paths.get(baseDir);
+        if (!Files.isDirectory(root)) {
+            return List.of();
+        }
+        try (Stream<Path> paths = Files.walk(root, 1)) {
+            return paths
                     .filter(Files::isDirectory)
-                    .filter(path -> !path.equals(Paths.get(directoryName))) // Exclude the main directory itself
+                    .filter(path -> !path.equals(root))
                     .map(path -> path.getFileName().toString())
                     .collect(Collectors.toList());
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Failed to list state directories under {}", root, e);
+            return List.of();
         }
-        return directoryNames;
     }
 
     @Override
+    @Cacheable(cacheNames = CACHE_STATE_GAMES, key = "#stateName")
     public List<LotteryGame> fetchStateGames(String stateName) {
-//        List<String> games = getNames();
-
-        // Create a File object for the specified directory
-        File directory = new File("tmp/" + stateName.toUpperCase() + "/");
-
-        // Create a FilenameFilter to filter .ser files
-        FilenameFilter serFilter = new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-                return name.endsWith(".ser");
-            }
-        };
-
-        // Get all .ser files in the directory
-        File[] serFiles = directory.listFiles(serFilter);
-        List<LotteryGame> lotteryGames = new ArrayList<>();
-
-        // Check if the directory is empty or no .ser files found
-        if (serFiles == null || serFiles.length == 0) {
-            System.out.println("No .ser files found in the directory.");
-        } else {
-            // Print the names of the .ser files without the .ser extension
-            for (File file : serFiles) {
-                String fileName = file.getName();
-                String nameWithoutExtension = fileName.substring(0, fileName.lastIndexOf('.'));
-                LotteryGame lotteryGame = new LotteryGame();
-                lotteryGame.setFullName(nameWithoutExtension);
-                lotteryGames.add(lotteryGame);
-                System.out.println(nameWithoutExtension);
-            }
+        final Path directory = Paths.get(baseDir, stateName.toUpperCase());
+        final List<LotteryGame> lotteryGames = new ArrayList<>();
+        if (!Files.isDirectory(directory)) {
+            log.info("No game directory found for state '{}'.", stateName);
+            return lotteryGames;
         }
-
+        try (Stream<Path> paths = Files.list(directory)) {
+            paths.filter(p -> p.getFileName().toString().endsWith(".ser"))
+                    .forEach(p -> {
+                        String fileName = p.getFileName().toString();
+                        String nameWithoutExtension = fileName.substring(0, fileName.lastIndexOf('.'));
+                        LotteryGame lotteryGame = new LotteryGame();
+                        lotteryGame.setFullName(nameWithoutExtension);
+                        lotteryGames.add(lotteryGame);
+                    });
+        } catch (IOException e) {
+            log.error("Failed to list games for state '{}'", stateName, e);
+        }
         return lotteryGames;
     }
 
     @Override
+    @Cacheable(CACHE_CATALOG_V1)
     public Optional<AllStateLottoGameResponse> getAllStateLotteryGames() throws Exception {
-        // Gather all directories within given directory
-            // The parent directory will be the state name
-                // all child directories will be the game names
-        Map<String, List<LotteryGame>> map = new HashMap<>();
-        populate(map);
-
-        // for all lottery games names in ascending order
+        Map<String, List<LotteryGame>> map = buildCatalog();
         map.values().forEach(lst -> lst.sort(Comparator.comparing(LotteryGame::getFullName)));
 
-        AllStateLottoGameResponse allStateLottoGameResponse = new AllStateLottoGameResponse();
-        allStateLottoGameResponse.setAllStateLotteryGames(map);
-        return Optional.of(allStateLottoGameResponse);
+        AllStateLottoGameResponse response = new AllStateLottoGameResponse();
+        response.setAllStateLotteryGames(map);
+        return Optional.of(response);
     }
 
     @Override
+    @Cacheable(CACHE_CATALOG_V2)
     public Optional<AllStateLottoGameResponse> getAllStateLotteryGamesV2() throws Exception {
-        AllStateLottoGameResponse allStateLottoGameResponse = new AllStateLottoGameResponse();
-
-        Map<String, List<LotteryGame>> map = new HashMap<>();
-        populate(map);
-
-        // for all lottery games names in ascending order
+        Map<String, List<LotteryGame>> map = buildCatalog();
         map.values().forEach(lst -> lst.sort(Comparator.comparing(LotteryGame::getFullName)));
 
         List<LotteryState> lotteryStates = new ArrayList<>();
@@ -158,80 +151,84 @@ public class LotteryDataService implements DataService {
             LotteryState lotteryState = new LotteryState();
             lotteryState.setStateRegion(state);
             lotteryState.setStateLotteryGames(games);
-
             lotteryStates.add(lotteryState);
         });
 
-        allStateLottoGameResponse.setLotteryStateGames(lotteryStates);
-
-        return Optional.of(allStateLottoGameResponse);
+        AllStateLottoGameResponse response = new AllStateLottoGameResponse();
+        response.setLotteryStateGames(lotteryStates);
+        return Optional.of(response);
     }
 
     @Override
+    @Cacheable(cacheNames = CACHE_STATE_GAME_NAMES, key = "#state")
     public Optional<List<String>> getAllStateLotteryGames(String state) throws Exception {
-        List<String> games = new ArrayList<>();
-        File directory = new File("tmp/" + state + "/");
-        if (directory.exists()) {
-            File[] files = directory.listFiles();
-            if (files != null) {
-                for (File file : files) {
-                    int index = file.getName().indexOf('.');
-                    games.add(file.getName().substring(0, index));
-                }
-            }
+        final Path directory = Paths.get(baseDir, state);
+        final List<String> games = new ArrayList<>();
+        if (!Files.isDirectory(directory)) {
+            return Optional.of(games);
+        }
+        try (Stream<Path> paths = Files.list(directory)) {
+            paths.forEach(p -> {
+                String name = p.getFileName().toString();
+                int index = name.indexOf('.');
+                games.add(index >= 0 ? name.substring(0, index) : name);
+            });
+        } catch (IOException e) {
+            log.error("Failed to list game names for state '{}'", state, e);
         }
         return Optional.of(games);
     }
 
-    private void populate(Map<String, List<LotteryGame>> map) throws Exception{
-        File directory = new File("tmp/");
-        listFilesForFolder(directory, map, "");
+    /**
+     * Builds the lightweight catalog (name / min / max / drawPositionCount, no draws) by
+     * deserializing each game once. Shared by both the v1 and v2 catalog endpoints.
+     */
+    private Map<String, List<LotteryGame>> buildCatalog() throws Exception {
+        Map<String, List<LotteryGame>> map = new HashMap<>();
+        listFilesForFolder(Paths.get(baseDir).toFile(), map, "");
+        return map;
     }
 
-    private void listFilesForFolder(final File folder, Map<String, List<LotteryGame>> map, String state) throws Exception {
+    private void listFilesForFolder(final java.io.File folder, Map<String, List<LotteryGame>> map, String state) throws Exception {
         String currentState = state;
-        if (folder.exists()) {
-            File[] fList = folder.listFiles();
-            if (fList != null) {
-                for (File file : fList) {
-                    if (file.isDirectory()) {
-                        currentState = file.getName().charAt(0) + file.getName().substring(1).toLowerCase();
-                        map.put(currentState, new ArrayList<>());
-                        listFilesForFolder(file, map, currentState);
-                    } else {
+        if (!folder.exists()) {
+            return;
+        }
+        java.io.File[] fList = folder.listFiles();
+        if (fList == null) {
+            return;
+        }
+        for (java.io.File file : fList) {
+            if (file.isDirectory()) {
+                currentState = file.getName().charAt(0) + file.getName().substring(1).toLowerCase();
+                map.put(currentState, new ArrayList<>());
+                listFilesForFolder(file, map, currentState);
+            } else {
+                String lotteryGameName = file.getName().split(Pattern.quote("."))[0];
+                StateGameAnalysisRequest request = new StateGameAnalysisRequest();
+                request.setStateName(currentState);
+                request.setGameName(lotteryGameName);
 
-                        String lotteryGameName = file.getName().split(Pattern.quote("."))[0];
-                        StateGameAnalysisRequest request = new StateGameAnalysisRequest();
-                        request.setStateName(currentState);
-                        request.setGameName(lotteryGameName);
-
-                        Optional<StateGamesResponse> stateData = getStateData(request);
-                        StateGamesResponse stateGamesResponse = stateData.get();
-                        LotteryGame game = stateGamesResponse.getLotteryGame();
-
-                        List<LotteryGame> lotteryGameList = map.get(currentState);
-                        LotteryGame lotteryGame = new LotteryGame();
-                        lotteryGame.setFullName(game.getFullName());
-                        lotteryGame.setStateGameBelongsTo(currentState);
-                        lotteryGame.setMinNumber(game.getMinNumber());
-                        lotteryGame.setMaxNumber(game.getMaxNumber());
-                        // FR-020-A: copy drawPositionCount from the deserialized .ser game.
-                        // This field is set by the aggregator processors before serialization and is the
-                        // authoritative source for both the v1 (/all/state-games) and v2 (/all/v2/state-games)
-                        // catalog paths, both of which call this method via populate(). (FR-020-B)
-                        if (game.getDrawPositionCount() != null) {
-                            lotteryGame.setDrawPositionCount(game.getDrawPositionCount());
-                        } else {
-                            log.warn("drawPositionCount is null for game '{}' in state '{}' — " +
-                                     ".ser file may be stale and require re-aggregation.",
-                                     game.getFullName(), currentState);
-                        }
-                        lotteryGame.setLotteryDraws(null);
-
-                        lotteryGameList.add(lotteryGame);
-                    }
-                   // System.out.println(file.getName());
+                LotteryGame game = getStateData(request).map(StateGamesResponse::getLotteryGame).orElse(null);
+                if (game == null) {
+                    log.warn("Skipping unreadable game file '{}' for state '{}'.", file.getName(), currentState);
+                    continue;
                 }
+
+                LotteryGame catalogGame = new LotteryGame();
+                catalogGame.setFullName(game.getFullName());
+                catalogGame.setStateGameBelongsTo(currentState);
+                catalogGame.setMinNumber(game.getMinNumber());
+                catalogGame.setMaxNumber(game.getMaxNumber());
+                // FR-020-A: propagate drawPositionCount (authoritative source for v1 and v2 catalogs).
+                if (game.getDrawPositionCount() != null) {
+                    catalogGame.setDrawPositionCount(game.getDrawPositionCount());
+                } else {
+                    log.warn("drawPositionCount is null for game '{}' in state '{}' — "
+                            + ".ser file may be stale and require re-aggregation.", game.getFullName(), currentState);
+                }
+                catalogGame.setLotteryDraws(null);
+                map.get(currentState).add(catalogGame);
             }
         }
     }
