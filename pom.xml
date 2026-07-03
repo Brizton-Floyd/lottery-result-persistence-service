@@ -7,8 +7,6 @@
         <module>lottery-result-persistence-server</module>
         <module>lottery-result-aggregator</module>
         <module>lottery-result-persistence-service-models</module>
-        <module>lottery-data-models</module>
-        <module>lottery-persistence</module>
     </modules>
     <parent>
 		<groupId>org.springframework.boot</groupId>

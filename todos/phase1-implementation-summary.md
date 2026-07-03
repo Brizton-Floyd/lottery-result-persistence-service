@@ -1,5 +1,11 @@
 # Phase 1 Implementation Summary - COMPLETED ✅
 
+> ⚠️ **REMOVED (2026-07-03):** The lottery prize-tier targeting subsystem described below has been
+> removed from the codebase. The `lottery-data-models` and `lottery-persistence` modules, the H2 database,
+> the JPA entities/repositories, and the `/api/v1/lottery-targeting/*` endpoints no longer exist. The
+> targeting data was in-memory only (volatile) and unused by any client. This document is retained solely
+> as a historical record of the reverted work; it does not reflect the current codebase.
+
 ## Overview
 Successfully implemented the core foundation and data persistence layer for the lottery prize tier targeting system. The implementation adds two new Maven modules to the existing lottery result persistence service while maintaining compatibility with the existing architecture.
 
