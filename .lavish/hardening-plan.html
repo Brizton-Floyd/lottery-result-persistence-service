@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en" data-theme="luxury">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Persistence Service Hardening Plan</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@5.5.19/daisyui.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@5.5.19/themes.css">
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.2.4/dist/index.global.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.15.0/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", securityLevel: "strict" });
+</script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :where(.grid, .flex) > * { min-width: 0; }
+  :where(p, h1, h2, h3, h4, li, dd, td, th, .badge) { overflow-wrap: anywhere; }
+  :where(img, svg) { max-width: 100%; height: auto; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .mermaid { background: var(--color-base-100); border-radius: 1rem; padding: 1rem; overflow-x: auto; }
+  .mermaid svg { max-width: 100%; height: auto; }
+  .mermaid marker { overflow: hidden; }
+</style>
+</head>
+<body class="bg-base-200 text-base-content">
+<main class="mx-auto max-w-6xl p-5 lg:p-10 space-y-10">
+
+  <!-- HEADER -->
+  <header class="space-y-3">
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="badge badge-primary badge-lg">Captain workflow · Plan</span>
+      <span class="badge badge-soft">Lane: backend (Java)</span>
+      <span class="badge badge-soft badge-info">Review surface</span>
+    </div>
+    <h1 class="text-4xl lg:text-5xl font-bold">Persistence Service Hardening Plan</h1>
+    <p class="text-lg opacity-80 max-w-3xl">
+      <span class="font-semibold">Intent:</span> make <span class="mono">lottery-result-persistence-service</span>
+      more accurate and robust by deleting the dead in-memory targeting subsystem, hardening the
+      state-games API, and decoupling the fragile Java-serialization store &mdash; without breaking the
+      consumers that depend on it.
+    </p>
+    <p class="text-sm opacity-60">Annotate any card, row, or claim below. Your decisions from the intake questions are already locked in.</p>
+  </header>
+
+  <!-- DECISIONS LOCKED -->
+  <section class="space-y-3">
+    <h2 class="text-2xl font-bold">Decisions you already locked</h2>
+    <div class="grid gap-4 md:grid-cols-3">
+      <div class="card card-border bg-base-100">
+        <div class="card-body p-5">
+          <span class="badge badge-success badge-sm">Draw store</span>
+          <p class="font-semibold">Decouple + stable format</p>
+          <p class="text-sm opacity-70">Split catalog metadata from draw history, move off Java serialization, cache the catalog.</p>
+        </div>
+      </div>
+      <div class="card card-border bg-base-100">
+        <div class="card-body p-5">
+          <span class="badge badge-error badge-sm">Targeting / H2</span>
+          <p class="font-semibold">Delete entirely</p>
+          <p class="text-sm opacity-70">Remove here <em>and</em> from every client. It is unwanted code, not just an ephemeral-storage bug.</p>
+        </div>
+      </div>
+      <div class="card card-border bg-base-100">
+        <div class="card-body p-5">
+          <span class="badge badge-info badge-sm">First move</span>
+          <p class="font-semibold">Tier-1 hardening PR</p>
+          <p class="text-sm opacity-70">Start with the robustness landmines that pay off regardless of the bigger refactor.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TOPOLOGY -->
+  <section class="space-y-3">
+    <h2 class="text-2xl font-bold">Where this service sits (verified)</h2>
+    <p class="opacity-80 max-w-3xl">Two consumers bind to <span class="mono">:8001</span> and both compile against this service's
+      shared models jar. Red = the subsystem being deleted. Dashed = calls that disappear after client cleanup.</p>
+    <div class="mermaid">
+flowchart TD
+  UI["lotto-options-ui<br/>(Angular)"] -->|/ui/*| BFF["BFF :8080"]
+  BFF --> CORE["lotto-options-core-server :8002<br/>PRIMARY CONSUMER"]
+  CORE -->|"POST /api/v1/state/games (hot path)"| SVC
+  CORE -->|"GET /all/v2/state-games (catalog)"| SVC
+  PRO["lottooptionspro<br/>(JavaFX desktop)"] -->|"GET /states, /states/{s}/games"| SVC
+  LEG["LottoOptions (legacy)"] -->|"GET /all/state-games"| SVC
+
+  subgraph SVC["THIS SERVICE :8001"]
+    API["state-games API<br/>PersistenceServiceController"]
+    SER[("​.ser filesystem<br/>tmp/{STATE}/{GAME}.ser")]
+    API --> SER
+    TARGET["lottery-targeting API<br/>2 controllers · ~30 endpoints"]:::del
+    H2[("in-memory H2<br/>wiped on restart")]:::del
+    TARGET --> H2
+  end
+
+  CORE -.->|"/api/v1/lottery-targeting/* (analyzer tooling)"| TARGET
+  PRO -.->|"/lottery-targeting/configurations"| TARGET
+
+  classDef del fill:#5b1a1a,stroke:#ef4444,color:#fecaca;
+    </div>
+  </section>
+
+  <!-- WHY (findings at a glance) -->
+  <section class="space-y-3">
+    <h2 class="text-2xl font-bold">The problems this fixes</h2>
+    <div class="stats stats-vertical lg:stats-horizontal shadow bg-base-100 w-full">
+      <div class="stat">
+        <div class="stat-title">.ser models with serialVersionUID</div>
+        <div class="stat-value text-error">0</div>
+        <div class="stat-desc">Any field change breaks existing files silently (the FR-020 bug)</div>
+      </div>
+      <div class="stat">
+        <div class="stat-title">Targeting data durability</div>
+        <div class="stat-value text-error">0%</div>
+        <div class="stat-desc">jdbc:h2:mem &mdash; lost every restart</div>
+      </div>
+      <div class="stat">
+        <div class="stat-title">Catalog call cost</div>
+        <div class="stat-value">N&times;8k</div>
+        <div class="stat-desc">Deserializes every draw, then throws them away</div>
+      </div>
+      <div class="stat">
+        <div class="stat-title">Consumer resilience (hot path)</div>
+        <div class="stat-value text-warning">none</div>
+        <div class="stat-desc">Blocking .block(), no timeout/retry</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PR SEQUENCE -->
+  <section class="space-y-4">
+    <h2 class="text-2xl font-bold">Proposed PR sequence</h2>
+    <ul class="steps steps-vertical lg:steps-horizontal w-full">
+      <li class="step step-primary">PR-1 Delete targeting</li>
+      <li class="step step-primary">PR-2 Harden API</li>
+      <li class="step step-warning">PR-3 Client cleanup</li>
+      <li class="step">PR-4 Decouple store</li>
+    </ul>
+
+    <div class="grid gap-4 lg:grid-cols-2">
+
+      <!-- PR-1 -->
+      <div class="card card-border bg-base-100">
+        <div class="card-body p-5 space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="card-title">PR-1 · Remove targeting/H2 subsystem</h3>
+            <span class="badge badge-success">low risk</span>
+          </div>
+          <p class="text-sm opacity-70">Repo: <span class="mono">persistence-service</span> &middot; pure deletion, verified self-contained.</p>
+          <ul class="text-sm list-disc pl-5 space-y-1">
+            <li>Delete modules <span class="mono">lottery-persistence</span> + <span class="mono">lottery-data-models</span></li>
+            <li>Delete <span class="mono">LotteryTargeting[Summary]Controller</span>, <span class="mono">H2DatabaseConfig</span></li>
+            <li>Delete <span class="mono">application-h2.yml</span>, <span class="mono">schema.sql</span>, <span class="mono">data.sql</span>, cleanup cron</li>
+            <li>Drop JPA/H2 deps; remove default <span class="mono">h2</span> profile</li>
+          </ul>
+          <p class="text-sm"><span class="font-semibold text-success">Kills:</span> in-memory data loss, duplicate <span class="mono">LotteryDraw</span>, ~30 endpoints, unused cron.</p>
+        </div>
+      </div>
+
+      <!-- PR-2 -->
+      <div class="card card-border bg-base-100">
+        <div class="card-body p-5 space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="card-title">PR-2 · Harden state-games API</h3>
+            <span class="badge badge-warning">medium risk</span>
+          </div>
+          <p class="text-sm opacity-70">Repo: <span class="mono">persistence-service</span> &middot; touches error/response contract.</p>
+          <ul class="text-sm list-disc pl-5 space-y-1">
+            <li><span class="mono">@ControllerAdvice</span> structured errors; correct 5xx vs 404 (stop returning <span class="mono">400 + null</span> on server faults)</li>
+            <li>Fail-loud <span class="mono">.ser</span> reads: distinguish missing vs corrupt; log at ERROR</li>
+            <li>Path-traversal validation on <span class="mono">state</span>/<span class="mono">game</span> before building file paths</li>
+            <li>Configurable storage root (replace hardcoded <span class="mono">"tmp/"</span>)</li>
+            <li>Dockerfile <span class="mono">openjdk:8 → temurin:17</span> (currently cannot run the jar)</li>
+            <li>Drop duplicate POM blocks + unused resilience4j; resolve web-vs-webflux</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- PR-3 -->
+      <div class="card card-border bg-base-100">
+        <div class="card-body p-5 space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="card-title">PR-3 · Client cleanup</h3>
+            <span class="badge badge-warning">medium risk</span>
+          </div>
+          <p class="text-sm opacity-70">Repos: <span class="mono">lotto-options-core</span>, <span class="mono">lottooptionspro</span>.</p>
+          <ul class="text-sm list-disc pl-5 space-y-1">
+            <li>core: delete <span class="mono">LotteryPersistenceClient</span> + <span class="mono">util/*</span> targeting tooling + config</li>
+            <li>core: fix the double-slash bug <span class="mono">/api/v1//state-games/</span></li>
+            <li><span class="mono">lottooptionspro</span>: remove <span class="mono">/lottery-targeting/configurations</span> calls</li>
+          </ul>
+          <div role="alert" class="alert alert-warning alert-soft text-sm mt-1">
+            <span>Removing configurations cuts <span class="mono">SmartNumberGenerationService</span>'s data source in lottooptionspro &mdash; see open question 1.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- PR-4 -->
+      <div class="card card-border bg-base-100">
+        <div class="card-body p-5 space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="card-title">PR-4 · Decouple store <span class="opacity-60 text-sm">(follow-on)</span></h3>
+            <span class="badge badge-error badge-soft">larger</span>
+          </div>
+          <p class="text-sm opacity-70">Repo: <span class="mono">persistence-service</span> &middot; read-path refactor, contract-affecting.</p>
+          <ul class="text-sm list-disc pl-5 space-y-1">
+            <li>Separate lightweight catalog store from heavy draw history</li>
+            <li>Move durable format off Java serialization (JSON-on-disk / embedded DB)</li>
+            <li>Cache catalog; lazy-load draws only for <span class="mono">POST /state/games</span></li>
+            <li>Publish OpenAPI; version the models jar off floating <span class="mono">0.0.1-SNAPSHOT</span></li>
+          </ul>
+          <p class="text-sm opacity-70">Planned separately after Tier-1 lands. Not part of the first push.</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- CURRENT VS TARGET -->
+  <section class="space-y-3">
+    <h2 class="text-2xl font-bold">Current &rarr; target behavior</h2>
+    <div class="overflow-x-auto rounded-box border border-base-content/10 bg-base-100">
+      <table class="table table-zebra">
+        <thead>
+          <tr><th>Concern</th><th>Today</th><th>After Tier-1</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="font-semibold">Server error</td>
+            <td class="text-error">Swallowed; returns <span class="mono">400 + null</span></td>
+            <td class="text-success"><span class="mono">5xx</span> + structured body; logged at ERROR</td>
+          </tr>
+          <tr>
+            <td class="font-semibold">Corrupt .ser</td>
+            <td class="text-error">Silent empty catalog</td>
+            <td class="text-success">Fails loud, names the bad file</td>
+          </tr>
+          <tr>
+            <td class="font-semibold">Targeting data</td>
+            <td class="text-error">In-mem H2, lost on restart</td>
+            <td class="text-success">Gone (deleted everywhere)</td>
+          </tr>
+          <tr>
+            <td class="font-semibold">Container</td>
+            <td class="text-error">JDK8 image, Java17 jar &rarr; won't run</td>
+            <td class="text-success">Temurin 17, runs</td>
+          </tr>
+          <tr>
+            <td class="font-semibold">state/game input</td>
+            <td class="text-warning">Flows into file path unchecked</td>
+            <td class="text-success">Validated, traversal-safe</td>
+          </tr>
+          <tr>
+            <td class="font-semibold">Model surface</td>
+            <td class="text-warning">2× LotteryDraw, dead modules</td>
+            <td class="text-success">Single draw model, 3 modules</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- OPEN QUESTIONS + INPUT -->
+  <section class="space-y-4">
+    <h2 class="text-2xl font-bold">Open questions &mdash; your call</h2>
+
+    <form data-lavish-question="oq1"
+      onsubmit="event.preventDefault(); const v=new FormData(event.currentTarget).get('oq1'); if(v) window.lavish.queuePrompt('lottooptionspro /lottery-targeting/configurations decision: '+v, {tag:'decision', text:'OQ1: '+v, element:event.currentTarget, data:{question:'oq1', answer:v}});">
+      <div class="card card-border bg-base-100">
+        <div class="card-body p-5 space-y-3">
+          <h3 class="card-title text-lg">1. lottooptionspro depends on <span class="mono">/lottery-targeting/configurations</span></h3>
+          <p class="text-sm opacity-80">Its <span class="mono">SmartNumberGenerationService</span> reads lottery configs from that endpoint. If we delete targeting, that data source disappears. How should PR-3 handle it?</p>
+          <div class="space-y-2 text-sm">
+            <label class="flex gap-2 items-start"><input type="radio" name="oq1" value="dead-remove" class="radio radio-sm mt-0.5"><span>It's dead &mdash; remove the calls and the feature path in lottooptionspro too.</span></label>
+            <label class="flex gap-2 items-start"><input type="radio" name="oq1" value="repoint" class="radio radio-sm mt-0.5"><span>Keep the feature &mdash; repoint it to another source (config elsewhere) before deleting.</span></label>
+            <label class="flex gap-2 items-start"><input type="radio" name="oq1" value="leave-pro" class="radio radio-sm mt-0.5"><span>Leave lottooptionspro alone for now; only clean core in PR-3.</span></label>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm w-fit">Queue this answer</button>
+        </div>
+      </div>
+    </form>
+
+    <form data-lavish-question="oq2"
+      onsubmit="event.preventDefault(); const v=new FormData(event.currentTarget).get('oq2'); if(v) window.lavish.queuePrompt('web-vs-webflux decision for PR-2: '+v, {tag:'decision', text:'OQ2: '+v, element:event.currentTarget, data:{question:'oq2', answer:v}});">
+      <div class="card card-border bg-base-100">
+        <div class="card-body p-5 space-y-3">
+          <h3 class="card-title text-lg">2. web vs webflux stack (PR-2)</h3>
+          <p class="text-sm opacity-80">Controllers return <span class="mono">Flux</span> but all I/O is blocking, and both <span class="mono">web</span> + <span class="mono">webflux</span> are on the classpath. I want to standardize &mdash; the constraint is not changing the JSON shape consumers already parse.</p>
+          <div class="space-y-2 text-sm">
+            <label class="flex gap-2 items-start"><input type="radio" name="oq2" value="servlet-preserve" class="radio radio-sm mt-0.5" checked><span><span class="font-semibold">Recommended:</span> standardize on servlet (<span class="mono">web</span>), keep response shapes identical, drop redundant reactive deps.</span></label>
+            <label class="flex gap-2 items-start"><input type="radio" name="oq2" value="keep-flux" class="radio radio-sm mt-0.5"><span>Keep webflux, offload blocking work to a bounded scheduler.</span></label>
+            <label class="flex gap-2 items-start"><input type="radio" name="oq2" value="defer" class="radio radio-sm mt-0.5"><span>Leave the stack as-is for PR-2; revisit later.</span></label>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm w-fit">Queue this answer</button>
+        </div>
+      </div>
+    </form>
+
+    <form data-lavish-question="approve"
+      onsubmit="event.preventDefault(); const v=new FormData(event.currentTarget).get('approve'); if(v) window.lavish.queuePrompt('PR sequence approval: '+v, {tag:'approval', text:'Sequence: '+v, element:event.currentTarget, data:{question:'approve', answer:v}});">
+      <div class="card card-border bg-primary/10 border-primary/40">
+        <div class="card-body p-5 space-y-3">
+          <h3 class="card-title text-lg">3. Approve the sequence?</h3>
+          <div class="space-y-2 text-sm">
+            <label class="flex gap-2 items-start"><input type="radio" name="approve" value="approved" class="radio radio-sm radio-primary mt-0.5"><span>Approved &mdash; start PR-1 (delete targeting) now.</span></label>
+            <label class="flex gap-2 items-start"><input type="radio" name="approve" value="reorder" class="radio radio-sm mt-0.5"><span>Approved but reorder &mdash; I'll note the order in a comment.</span></label>
+            <label class="flex gap-2 items-start"><input type="radio" name="approve" value="changes" class="radio radio-sm mt-0.5"><span>Changes needed &mdash; see my annotations.</span></label>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm w-fit">Queue decision</button>
+          <p class="text-xs opacity-60">Then press <span class="font-semibold">Send to Agent</span> to send all queued answers + annotations.</p>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <footer class="pt-4 opacity-50 text-xs">
+    Design source: Lavish-recommended Tailwind + DaisyUI (no project design system to match on a backend service).
+    All findings verified against the repos on disk.
+  </footer>
+
+</main>
+</body>
+</html>
