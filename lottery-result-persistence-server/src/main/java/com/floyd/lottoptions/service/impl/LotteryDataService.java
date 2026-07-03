@@ -209,7 +209,13 @@ public class LotteryDataService implements DataService {
                 request.setStateName(currentState);
                 request.setGameName(lotteryGameName);
 
-                LotteryGame game = getStateData(request).map(StateGamesResponse::getLotteryGame).orElse(null);
+                LotteryGame game;
+                try {
+                    game = getStateData(request).map(StateGamesResponse::getLotteryGame).orElse(null);
+                } catch (Exception e) {
+                    log.warn("Skipping unreadable game file '{}' for state '{}'.", file.getName(), currentState, e);
+                    continue;
+                }
                 if (game == null) {
                     log.warn("Skipping unreadable game file '{}' for state '{}'.", file.getName(), currentState);
                     continue;
