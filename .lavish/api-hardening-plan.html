@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en" data-theme="luxury">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API Hardening Plan · Captain Review</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@5.5.19/daisyui.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@5.5.19/themes.css">
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.2.4/dist/index.global.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.15.0/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark", securityLevel: "strict" });
+</script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :where(.grid, .flex) > * { min-width: 0; }
+  :where(p, h1, h2, h3, h4, li, dd, td, th, .badge) { overflow-wrap: anywhere; }
+  :where(img, svg) { max-width: 100%; height: auto; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .mermaid { background: var(--color-base-100); border-radius: 1rem; padding: 1rem; overflow-x: auto; }
+  .mermaid svg { max-width: 100%; height: auto; }
+  table { display: block; overflow-x: auto; }
+</style>
+</head>
+<body class="bg-base-200 text-base-content">
+<main class="mx-auto max-w-6xl p-5 lg:p-10 space-y-10">
+
+  <!-- HEADER -->
+  <header class="space-y-3">
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="badge badge-primary badge-lg">Captain workflow · Plan front</span>
+      <span class="badge badge-soft">Lane: backend (Java)</span>
+      <span class="badge badge-soft badge-info">Awaiting your approval</span>
+    </div>
+    <h1 class="text-4xl lg:text-5xl font-bold">API Hardening Plan</h1>
+    <p class="text-lg opacity-80 max-w-3xl">
+      <span class="font-semibold">Intent:</span> harden
+      <span class="mono">lottery-result-persistence-service</span> against
+      <span class="font-semibold">data corruption</span>,
+      <span class="font-semibold">source-fetch hangs</span>, and
+      <span class="font-semibold">redundant full-catalog deserialization</span> &mdash; without changing
+      any success-path response contract.
+    </p>
+    <div class="flex flex-wrap gap-2 text-sm">
+      <span class="badge badge-outline">Scope: single-instance, low traffic</span>
+      <span class="badge badge-outline">Keep the <span class="mono">.ser</span> store (no DB this pass)</span>
+      <span class="badge badge-outline">Branch: <span class="mono">harden/api-persistence-hardening</span></span>
+    </div>
+    <p class="text-sm opacity-60">Annotate any card, row, or claim. Approve or request changes at the bottom.</p>
+  </header>
+
+  <!-- WHY / PROBLEMS -->
+  <section class="space-y-3">
+    <h2 class="text-2xl font-bold">Why: the defects that matter, ranked</h2>
+    <p class="opacity-70 max-w-3xl text-sm">Grounded in a full read of the codebase. Each row maps to a workstream below.</p>
+    <div class="overflow-x-auto rounded-box border border-base-300">
+      <table class="table table-zebra">
+        <thead>
+          <tr><th>#</th><th>Defect</th><th>Consequence today</th><th>Fix class</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="badge badge-error">1</span></td>
+            <td>Catalog endpoints re-walk the tree and re-deserialize <em>every</em> game (full 8000-draw history) on every request</td>
+            <td><span class="mono">/all/state-games</span> &amp; <span class="mono">/all/v2/state-games</span> are O(states×games×draws) per call, no cache</td>
+            <td>In-memory cache</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-error">2</span></td>
+            <td>Non-atomic <span class="mono">.ser</span> overwrite; no <span class="mono">serialVersionUID</span></td>
+            <td>Crash mid-write corrupts the file; any model change bricks all existing files with <span class="mono">InvalidClassException</span></td>
+            <td>Durability</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-warning">3</span></td>
+            <td>No timeout/retry/rate-limit on outbound HTTP (Resilience4j on classpath, unused)</td>
+            <td>One hanging lottery URL blocks the entire single-threaded poll indefinitely</td>
+            <td>Reliability</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-warning">4</span></td>
+            <td><span class="mono">catch(Exception){printStackTrace}</span>; endpoints return <span class="mono">null</span> body + <span class="mono">400</span> on any error</td>
+            <td>Failures invisible; clients can't tell "no data" from "server broke"</td>
+            <td>Error handling</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-info">5</span></td>
+            <td>Sequential single-threaded poll; <span class="mono">State.valueOf</span> throws on unmodeled states</td>
+            <td>Poll time grows linearly; one bad state name aborts the batch</td>
+            <td>Concurrency</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-info">6</span></td>
+            <td>Test can't reach production code (hard-coded <span class="mono">"tmp/"</span>), so it re-implements the logic it "tests"</td>
+            <td>Catalog test validates a copy, not the real method</td>
+            <td>Testability</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- WORKSTREAMS -->
+  <section class="space-y-4">
+    <h2 class="text-2xl font-bold">The 7 workstreams</h2>
+    <div class="flex flex-wrap gap-2 text-xs">
+      <span class="badge badge-success">3 already implemented (uncommitted on branch)</span>
+      <span class="badge badge-neutral">4 remaining</span>
+    </div>
+
+    <div class="grid gap-4 md:grid-cols-2">
+
+      <div class="card card-border bg-base-100">
+        <div class="card-body p-5 space-y-1">
+          <div class="flex items-center justify-between gap-2">
+            <span class="badge badge-success badge-sm">Done</span><span class="text-xs opacity-50">W1 · models</span>
+          </div>
+          <p class="font-semibold">Pin <span class="mono">serialVersionUID</span></p>
+          <p class="text-sm opacity-70">Pinned the JVM-computed values (<span class="mono">LotteryGame</span> = 8661…644, <span class="mono">LotteryDraw</span> = -8462…061) so <em>existing</em> <span class="mono">.ser</span> files still deserialize and future changes are controlled.</p>
+        </div>
+      </div>
+
+      <div class="card card-border bg-base-100">
+        <div class="card-body p-5 space-y-1">
+          <div class="flex items-center justify-between gap-2">
+            <span class="badge badge-success badge-sm">Done</span><span class="text-xs opacity-50">W2 · serializer</span>
+          </div>
+          <p class="font-semibold">Atomic + durable <span class="mono">.ser</span> write</p>
+          <p class="text-sm opacity-70">Write to a temp file → <span class="mono">fsync</span> → atomic rename. Readers see the old or new file, never a half-written one. Base dir now configurable (default <span class="mono">tmp</span>).</p>
+        </div>
+      </div>
+
+      <div class="card card-border bg-base-100">
+        <div class="card-body p-5 space-y-1">
+          <div class="flex items-center justify-between gap-2">
+            <span class="badge badge-success badge-sm">Done</span><span class="text-xs opacity-50">W3 · readers</span>
+          </div>
+          <p class="font-semibold">HTTP timeouts</p>
+          <p class="text-sm opacity-70">10s connect / 30s read on CSV &amp; PDF downloads; <span class="mono">PdfFileReader</span> static <span class="mono">lines</span> → instance field (thread-safe for parallel poll).</p>
+        </div>
+      </div>
+
+      <div class="card card-border bg-base-100 ring-1 ring-warning/40">
+        <div class="card-body p-5 space-y-1">
+          <div class="flex items-center justify-between gap-2">
+            <span class="badge badge-neutral badge-sm">To build</span><span class="text-xs opacity-50">W4 · polling</span>
+          </div>
+          <p class="font-semibold">Resilience4j + parallel, failure-isolated poll</p>
+          <p class="text-sm opacity-70">Retry (3×, backoff) + rate limiter (polite to texaslottery.com) per game; bounded parallel fetch; one game failing no longer aborts the rest; safe state lookup (no throw). Poll logs at <span class="mono">error</span>, not <span class="mono">debug</span>.</p>
+        </div>
+      </div>
+
+      <div class="card card-border bg-base-100 ring-1 ring-warning/40">
+        <div class="card-body p-5 space-y-1">
+          <div class="flex items-center justify-between gap-2">
+            <span class="badge badge-neutral badge-sm">To build</span><span class="text-xs opacity-50">W5 · cache</span>
+          </div>
+          <p class="font-semibold">In-memory catalog cache</p>
+          <p class="text-sm opacity-70">Spring Cache on the hot read/catalog methods, evicted on a <span class="mono">PollCompletedEvent</span> published after each poll. Repeat catalog calls become free; data stays fresh within a poll cycle.</p>
+        </div>
+      </div>
+
+      <div class="card card-border bg-base-100 ring-1 ring-warning/40">
+        <div class="card-body p-5 space-y-1">
+          <div class="flex items-center justify-between gap-2">
+            <span class="badge badge-neutral badge-sm">To build</span><span class="text-xs opacity-50">W6 · errors</span>
+          </div>
+          <p class="font-semibold">Global exception handling</p>
+          <p class="text-sm opacity-70"><span class="mono">@RestControllerAdvice</span> with a structured <span class="mono">ApiError</span> body; 404 for missing state/game, 5xx for real failures. Replaces <span class="mono">null</span>+400 swallow. Logger/`System.out` cleanup.</p>
+        </div>
+      </div>
+
+      <div class="card card-border bg-base-100 ring-1 ring-warning/40">
+        <div class="card-body p-5 space-y-1">
+          <div class="flex items-center justify-between gap-2">
+            <span class="badge badge-neutral badge-sm">To build</span><span class="text-xs opacity-50">W7 · tests</span>
+          </div>
+          <p class="font-semibold">Real-code tests</p>
+          <p class="text-sm opacity-70">Point the service at a <span class="mono">@TempDir</span> via the new configurable base dir so the catalog test exercises the <em>actual</em> production method. Add serializer round-trip + atomicity (no leftover <span class="mono">.tmp</span>) tests.</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- FLOW DIAGRAM -->
+  <section class="space-y-3">
+    <h2 class="text-2xl font-bold">Where the changes sit</h2>
+    <div class="mermaid">
+flowchart LR
+  subgraph poll["Poll (every 2h + startup)"]
+    J[DrawResultJob] --> P[PollingService]
+    P -->|"W4 parallel + retry + rate-limit"| RD[CSV/PDF readers]
+    RD -->|"W3 timeouts"| SRC[(texaslottery.com)]
+    P --> SER[LotteryGameSerializer]
+    SER -->|"W2 atomic write"| FS[(tmp/STATE/Game.ser)]
+    P -.->|"W5 PollCompletedEvent"| EV((evict cache))
+  end
+  subgraph read["Read API"]
+    C[Controller] -->|"W6 error advice"| DS[LotteryDataService]
+    DS -->|"W5 cache-aside"| CACHE[(catalog cache)]
+    CACHE -.miss.-> FS
+  end
+  EV -.-> CACHE
+    </div>
+  </section>
+
+  <!-- BACKWARD COMPAT -->
+  <section class="space-y-3">
+    <h2 class="text-2xl font-bold">Backward-compatibility contract</h2>
+    <div class="grid gap-4 md:grid-cols-2">
+      <div class="card card-border bg-success/10">
+        <div class="card-body p-5">
+          <span class="badge badge-success badge-sm">Unchanged</span>
+          <ul class="text-sm space-y-1 mt-2 list-disc list-inside opacity-80">
+            <li>All 6 endpoint paths &amp; HTTP methods</li>
+            <li>Success (2xx) response bodies &amp; JSON shapes</li>
+            <li>On-disk layout <span class="mono">tmp/{STATE}/{GAME}.ser</span> (default)</li>
+            <li>Existing <span class="mono">.ser</span> files keep loading (pinned UID)</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card card-border bg-warning/10">
+        <div class="card-body p-5">
+          <span class="badge badge-warning badge-sm">Intentional change (error paths only)</span>
+          <ul class="text-sm space-y-1 mt-2 list-disc list-inside opacity-80">
+            <li>Errors now return proper <span class="mono">404</span>/<span class="mono">5xx</span> + JSON error body instead of <span class="mono">400</span> + <span class="mono">null</span></li>
+            <li>A client that treated the old <span class="mono">400</span>/<span class="mono">null</span> as "empty" sees a status change &mdash; only on failures</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RISKS -->
+  <section class="space-y-3">
+    <h2 class="text-2xl font-bold">Risks &amp; how they're handled</h2>
+    <div class="overflow-x-auto rounded-box border border-base-300">
+      <table class="table">
+        <thead><tr><th>Risk</th><th>Mitigation</th></tr></thead>
+        <tbody>
+          <tr><td>Pinned UID differs from old files' implicit UID</td><td>Computed via <span class="mono">serialver</span> against the current class, so it equals the implicit value → old files still load. Verified before pinning.</td></tr>
+          <tr><td>Parallel poll shares mutable reader state</td><td>Fresh reader/processor per game task; PDF static state removed. Rate limiter caps outbound concurrency.</td></tr>
+          <tr><td>Cache serves stale catalog</td><td>Evicted on every <span class="mono">PollCompletedEvent</span>; poll is the only writer. Max staleness = one poll cycle.</td></tr>
+          <tr><td>New deps (resilience4j-spring-boot3, cache)</td><td>Aligned to Spring Boot 3.3 / Java 17; replaces unused 1.6.1 jars. Validated by full <span class="mono">mvn clean install</span>.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- OPEN QUESTIONS -->
+  <section class="space-y-3">
+    <h2 class="text-2xl font-bold">Open questions for you</h2>
+    <div class="grid gap-4 md:grid-cols-2">
+      <div class="card card-border bg-base-100">
+        <div class="card-body p-5">
+          <p class="font-semibold text-sm">Q1 · Error-status change acceptable?</p>
+          <p class="text-sm opacity-70">Moving error responses from <span class="mono">400/null</span> to <span class="mono">404/5xx</span> + JSON is strictly better but is a (failure-path) contract change. OK to include, or keep <span class="mono">400</span> for now?</p>
+        </div>
+      </div>
+      <div class="card card-border bg-base-100">
+        <div class="card-body p-5">
+          <p class="font-semibold text-sm">Q2 · The 8000-draw cap</p>
+          <p class="text-sm opacity-70">Left as-is this pass (it's a product decision, not a defect). Flag if you want it revisited.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- APPROVAL -->
+  <section class="space-y-3">
+    <h2 class="text-2xl font-bold">Decision</h2>
+    <form data-lavish-question="approval"
+          onsubmit="event.preventDefault();
+            const fd = new FormData(event.currentTarget);
+            const choice = fd.get('approval');
+            const note = fd.get('note') || '';
+            if (!choice) return;
+            window.lavish.queuePrompt(
+              'Captain decision on API hardening plan: ' + choice + (note ? ' — Note: ' + note : ''),
+              { tag: 'decision', text: 'Plan: ' + choice, element: event.currentTarget, data: { question: 'approval', answer: choice, note: note } });">
+      <div class="card card-border bg-base-100">
+        <div class="card-body p-5 space-y-4">
+          <div class="grid gap-3 md:grid-cols-3">
+            <label class="label cursor-pointer justify-start gap-3 rounded-box border border-base-300 p-3 hover:bg-base-200">
+              <input type="radio" name="approval" value="Approve all 7 as scoped" class="radio radio-success" checked>
+              <span class="text-sm font-semibold">Approve all 7</span>
+            </label>
+            <label class="label cursor-pointer justify-start gap-3 rounded-box border border-base-300 p-3 hover:bg-base-200">
+              <input type="radio" name="approval" value="Approve, but keep 400 errors (drop W6 status change)" class="radio radio-warning">
+              <span class="text-sm font-semibold">Approve, keep 400s</span>
+            </label>
+            <label class="label cursor-pointer justify-start gap-3 rounded-box border border-base-300 p-3 hover:bg-base-200">
+              <input type="radio" name="approval" value="Request changes (see note)" class="radio radio-error">
+              <span class="text-sm font-semibold">Request changes</span>
+            </label>
+          </div>
+          <textarea name="note" class="textarea textarea-bordered w-full" rows="2" placeholder="Optional note / annotations to send with your decision"></textarea>
+          <button type="submit" class="btn btn-primary">Queue decision</button>
+          <p class="text-xs opacity-60">Queues one prompt; press <span class="font-semibold">Send to Agent</span> in the Lavish toolbar to deliver it.</p>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <footer class="pt-4 text-xs opacity-50">
+    Design source: Lavish-recommended Tailwind + DaisyUI (luxury theme), matched to this repo's existing Lavish artifact style. Every claim verified against the source tree.
+  </footer>
+
+</main>
+</body>
+</html>

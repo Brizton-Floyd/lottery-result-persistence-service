@@ -20,8 +20,9 @@ The project follows a modular Maven structure with 3 main modules:
 - Spring WebFlux for reactive programming
 - Apache PDFBox for PDF processing
 - OpenCSV for CSV parsing
-- File-based persistence using Java serialization (.ser files)
-- Resilience4j for rate limiting and fault tolerance
+- File-based persistence using Java serialization (.ser files), written atomically (temp file + fsync + atomic rename)
+- Resilience4j for retry and rate limiting of outbound lottery-source fetches
+- Spring Cache (in-memory `ConcurrentMapCacheManager`) for the read/catalog endpoints
 
 ## Development Commands
 
@@ -56,13 +57,15 @@ docker-compose up
 ## Data Flow Architecture
 
 1. **Application Startup**: `LotteryResultPersistenceServiceApplication` starts polling service
-2. **Polling**: `LotteryResultPollingService` fetches lottery data from configured URLs in application.yml
+2. **Polling**: `LotteryResultPollingService` fetches lottery data from configured URLs in application.yml. Games are polled in a bounded thread pool (`lottery.polling.pool-size`), each fetch wrapped with Resilience4j retry and rate limiting; a single game's failure is isolated and logged rather than aborting the batch
 3. **Processing**: State-specific processors (e.g., `TexasLotteryHistoryProcessor`) parse CSV files and create `LotteryGame` objects
-4. **Persistence**: `LotteryGameSerializer` saves processed data as .ser files in `tmp/{STATE}/` directories
-5. **API Access**: REST controllers serve the persisted data via `/api/v1` endpoints
+4. **Persistence**: `LotteryGameSerializer` saves processed data as .ser files in `{base-dir}/{STATE}/` directories via a crash-safe atomic write (temp file → fsync → atomic rename)
+5. **Cache invalidation**: when the poll cycle finishes it publishes a `PollCompletedEvent`; `CatalogCacheEvictor` listens for it and evicts all read/catalog caches so freshly-polled data becomes visible on the next request
+6. **API Access**: REST controllers serve the persisted (and cached) data via `/api/v1` endpoints
 
 ### File Structure Pattern
-- Processed lottery data is stored in `tmp/{STATE_NAME}/{GAME_NAME}.ser` format
+- Processed lottery data is stored in `{base-dir}/{STATE_NAME}/{GAME_NAME}.ser` format
+- The storage root is configurable via `lottery.storage.base-dir` (default `tmp`), which also lets tests point the real code at a temp directory
 - Example: `tmp/TEXAS/Powerball.ser`
 
 ## Key Components
@@ -71,6 +74,11 @@ docker-compose up
 - `application.yml` contains lottery URLs and state region mappings
 - URLs are organized by state with game-specific endpoints
 - Currently supports Texas lottery games (CSV format)
+- Operational settings (with defaults):
+  - `lottery.storage.base-dir` (`tmp`): base directory for the .ser draw store, relative to the process working directory
+  - `lottery.polling.pool-size` (`4`): bounded parallelism for the draw-result poll
+  - `resilience4j.retry.instances.lotteryFetch`: retry policy for outbound fetches (max 3 attempts, exponential backoff, retries on `IOException`)
+  - `resilience4j.ratelimiter.instances.lotteryFetch`: caps outbound download rate to the upstream lottery source
 
 ### Processors
 - `HistoryProcessor` interface with state-specific implementations
@@ -89,15 +97,24 @@ docker-compose up
 - `GET /api/v1/all/state-games` - Get all state lottery games (v1)
 - `GET /api/v1/all/v2/state-games` - Get all state lottery games (v2 with nested structure)
 - `GET /api/v1/state-games/{state}` - Get game names for a specific state
-- `POST /api/v1/state/games` - Get detailed game data with StateGameAnalysisRequest
+- `POST /api/v1/state/games` - Get detailed game data with StateGameAnalysisRequest; returns `404 Not Found` when the requested state/game has no persisted data
+
+### Error Handling
+- Failures are handled centrally by `GlobalExceptionHandler` (`@RestControllerAdvice`), which returns a structured `ApiError` JSON body (`timestamp`, `status`, `error`, `message`, `path`)
+- `ResourceNotFoundException` → `404`; `IllegalArgumentException` → `400`; any other unhandled exception → `500`
+- This replaces the previous behavior of catching exceptions and returning a `null` body with HTTP `400` for every failure; the catalog endpoints (`/all/state-games`, `/all/v2/state-games`, `/state-games/{state}`) now return an empty response rather than `400` when no data is present
 
 ## Development Notes
 
 - The application uses file-based persistence instead of a database
+- Read/catalog endpoints are cached in memory; the cache is invalidated whenever a poll completes, so staleness is bounded to a single poll cycle
 - Lottery data is limited to the most recent 8000 draw results per game
 - The system currently only supports Texas lottery data processing
 - Louisiana lottery support is commented out in configuration
-- Automated tests live under `lottery-result-persistence-server/src/test`; `LotteryDataServiceTest` covers the `drawPositionCount` catalog path (v1 and v2). Run them with `mvn test`
+- Automated tests:
+  - `lottery-result-persistence-server/src/test` — `LotteryDataServiceTest` exercises the real `LotteryDataService` against a temp `base-dir`, covering the `drawPositionCount` catalog path (v1 and v2), full game reads, and missing-game handling
+  - `lottery-result-aggregator/src/test` — `LotteryGameSerializerTest` covers the atomic .ser write (readable output, in-place overwrite, no orphaned temp files)
+  - Run them with `mvn test`
 
 ## File Processing Logic
 

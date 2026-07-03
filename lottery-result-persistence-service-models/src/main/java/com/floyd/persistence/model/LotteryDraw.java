@@ -11,6 +11,9 @@ import java.util.List;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class LotteryDraw implements Serializable {
+    /** Pinned implicit value; see {@link LotteryGame#serialVersionUID} for rationale. */
+    private static final long serialVersionUID = -8462990218649296061L;
+
     private LocalDate drawDate;
     private Integer bonusNumber;
     private List<Integer> drawResults = new ArrayList<>();
