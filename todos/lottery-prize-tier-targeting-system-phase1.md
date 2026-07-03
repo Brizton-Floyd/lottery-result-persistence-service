@@ -1,5 +1,11 @@
 # Lottery Prize Tier Targeting System - Phase 1 Implementation Plan
 
+> ⚠️ **REMOVED (2026-07-03):** The targeting subsystem planned below was built and later removed from the
+> codebase. The `lottery-data-models` and `lottery-persistence` modules, the H2 embedded database, and the
+> `/api/v1/lottery-targeting/*` endpoints no longer exist. The targeting data was in-memory only (volatile)
+> and unused by any client. This plan is retained solely as a historical record; it does not reflect the
+> current codebase.
+
 ## Project Overview
 Implementation of core foundation and data persistence for a lottery number generation system targeting specific prize tiers (3, 4, 5+). This system will integrate with the existing multi-module Spring Boot lottery result persistence service.
 
