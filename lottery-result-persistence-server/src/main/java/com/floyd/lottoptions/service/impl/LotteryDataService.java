@@ -170,6 +170,9 @@ public class LotteryDataService implements DataService {
         try (Stream<Path> paths = Files.list(directory)) {
             paths.forEach(p -> {
                 String name = p.getFileName().toString();
+                if (!name.endsWith(".ser")) {
+                    return;
+                }
                 int index = name.indexOf('.');
                 games.add(index >= 0 ? name.substring(0, index) : name);
             });
@@ -204,6 +207,9 @@ public class LotteryDataService implements DataService {
                 map.put(currentState, new ArrayList<>());
                 listFilesForFolder(file, map, currentState);
             } else {
+                if (!file.getName().endsWith(".ser")) {
+                    continue;
+                }
                 String lotteryGameName = file.getName().split(Pattern.quote("."))[0];
                 StateGameAnalysisRequest request = new StateGameAnalysisRequest();
                 request.setStateName(currentState);

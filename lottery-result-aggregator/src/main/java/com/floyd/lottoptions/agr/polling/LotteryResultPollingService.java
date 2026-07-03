@@ -66,7 +66,7 @@ public class LotteryResultPollingService implements PollingService {
 
         int succeeded = 0;
         int failed = 0;
-        final ExecutorService pool = Executors.newFixedThreadPool(Math.min(poolSize, tasks.size()));
+        final ExecutorService pool = Executors.newFixedThreadPool(Math.max(1, Math.min(poolSize, tasks.size())));
         try {
             for (Future<Boolean> result : pool.invokeAll(tasks)) {
                 try {
