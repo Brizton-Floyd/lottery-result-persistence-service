@@ -97,7 +97,7 @@ docker-compose up
 - Lottery data is limited to the most recent 8000 draw results per game
 - The system currently only supports Texas lottery data processing
 - Louisiana lottery support is commented out in configuration
-- No automated tests are currently present in the codebase
+- Automated tests live under `lottery-result-persistence-server/src/test`; `LotteryDataServiceTest` covers the `drawPositionCount` catalog path (v1 and v2). Run them with `mvn test`
 
 ## File Processing Logic
 
