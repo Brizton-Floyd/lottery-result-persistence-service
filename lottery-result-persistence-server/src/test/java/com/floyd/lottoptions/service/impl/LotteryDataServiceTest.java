@@ -152,4 +152,26 @@ class LotteryDataServiceTest {
         assertThat(result).isPresent();
         assertThat(result.get().getLotteryGame()).isNull();
     }
+
+    @Test
+    @DisplayName("state names resolve to the upper-case store directory regardless of input case")
+    void stateDirectoryName_normalizesToUpperCase() {
+        // The store directory is TEXAS; on a case-sensitive filesystem (Linux, containers) any
+        // reader that does not normalize through this key finds no directory for "Texas".
+        assertThat(LotteryDataService.stateDirectoryName("Texas")).isEqualTo("TEXAS");
+        assertThat(LotteryDataService.stateDirectoryName("texas")).isEqualTo("TEXAS");
+        assertThat(LotteryDataService.stateDirectoryName("TEXAS")).isEqualTo("TEXAS");
+    }
+
+    @Test
+    @DisplayName("game names for a state are found for Texas, texas and TEXAS")
+    void getAllStateLotteryGames_byState_isCaseInsensitive() throws Exception {
+        writeGame("TEXAS", "Powerball", 5);
+
+        for (String state : List.of("Texas", "texas", "TEXAS")) {
+            assertThat(service.getAllStateLotteryGames(state))
+                    .as("game names for '%s'", state)
+                    .hasValue(List.of("Powerball"));
+        }
+    }
 }

@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -62,7 +63,7 @@ public class LotteryDataService implements DataService {
         final String stateName = stateGameAnalysisRequest.getStateName();
         final StateGamesResponse response = new StateGamesResponse();
 
-        final Path serFile = Paths.get(baseDir, stateName.toUpperCase(), gameName + ".ser");
+        final Path serFile = Paths.get(baseDir, stateDirectoryName(stateName), gameName + ".ser");
         if (!Files.isRegularFile(serFile)) {
             return Optional.of(response);
         }
@@ -74,6 +75,15 @@ public class LotteryDataService implements DataService {
             throw e;
         }
         return Optional.of(response);
+    }
+
+    /**
+     * Resolves a caller-supplied state name ({@code Texas}, {@code texas}, {@code TEXAS}) to its
+     * store directory name. State directories are written upper-case, so every reader must
+     * normalize through here; a raw name only matches on a case-insensitive filesystem.
+     */
+    static String stateDirectoryName(String stateName) {
+        return stateName.toUpperCase(Locale.ROOT);
     }
 
     @Override
@@ -108,7 +118,7 @@ public class LotteryDataService implements DataService {
     @Override
     @Cacheable(cacheNames = CACHE_STATE_GAMES, key = "#stateName")
     public List<LotteryGame> fetchStateGames(String stateName) {
-        final Path directory = Paths.get(baseDir, stateName.toUpperCase());
+        final Path directory = Paths.get(baseDir, stateDirectoryName(stateName));
         final List<LotteryGame> lotteryGames = new ArrayList<>();
         if (!Files.isDirectory(directory)) {
             log.info("No game directory found for state '{}'.", stateName);
@@ -162,7 +172,7 @@ public class LotteryDataService implements DataService {
     @Override
     @Cacheable(cacheNames = CACHE_STATE_GAME_NAMES, key = "#state")
     public Optional<List<String>> getAllStateLotteryGames(String state) throws Exception {
-        final Path directory = Paths.get(baseDir, state);
+        final Path directory = Paths.get(baseDir, stateDirectoryName(state));
         final List<String> games = new ArrayList<>();
         if (!Files.isDirectory(directory)) {
             return Optional.of(games);
