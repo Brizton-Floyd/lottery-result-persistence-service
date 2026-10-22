@@ -28,7 +28,7 @@ public class CatalogCacheEvictor {
             LotteryDataService.CACHE_STATE_GAMES
     }, allEntries = true)
     public void onPollCompleted(PollCompletedEvent event) {
-        log.info("Poll completed ({} succeeded, {} failed); read caches evicted.",
-                event.gamesSucceeded(), event.gamesFailed());
+        log.info("Poll completed ({} succeeded, {} with rejected rows, {} failed); read caches evicted.",
+                event.gamesSucceeded(), event.gamesWithRejectedRows(), event.gamesFailed());
     }
 }

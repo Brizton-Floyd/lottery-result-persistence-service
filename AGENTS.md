@@ -57,8 +57,8 @@ docker-compose up
 ## Data Flow Architecture
 
 1. **Application Startup**: `LotteryResultPersistenceServiceApplication` starts polling service
-2. **Polling**: `LotteryResultPollingService` fetches lottery data from configured URLs in application.yml. Games are polled in a bounded thread pool (`lottery.polling.pool-size`), each fetch wrapped with Resilience4j retry and rate limiting; a single game's failure is isolated and logged rather than aborting the batch
-3. **Processing**: State-specific processors (e.g., `TexasLotteryHistoryProcessor`) parse CSV files and create `LotteryGame` objects
+2. **Polling**: `LotteryResultPollingService` fetches lottery data from configured URLs in application.yml. Games are polled in a bounded thread pool (`lottery.polling.pool-size`), each fetch wrapped with Resilience4j retry and rate limiting; a single game's failure is isolated and logged rather than aborting the batch. Each game ends as succeeded, persisted with rejected rows (some source rows unparseable and missing from the store), or failed; the poll summary log and `PollCompletedEvent` report all three
+3. **Processing**: State-specific processors (e.g., `TexasLotteryHistoryProcessor`) parse CSV files and create `LotteryGame` objects. Every poll rebuilds each game from the full source file and overwrites its `.ser`; nothing is merged with the previous store, so a parser fix repairs already-stored data on the next poll (startup runs one). A game with no parseable rows fails and keeps its previous `.ser`
 4. **Persistence**: `LotteryGameSerializer` saves processed data as .ser files in `{base-dir}/{STATE}/` directories via a crash-safe atomic write (temp file → fsync → atomic rename)
 5. **Cache invalidation**: when the poll cycle finishes it publishes a `PollCompletedEvent`; `CatalogCacheEvictor` listens for it and evicts all read/catalog caches so freshly-polled data becomes visible on the next request
 6. **API Access**: REST controllers serve the persisted (and cached) data via `/api/v1` endpoints
@@ -87,7 +87,7 @@ docker-compose up
 
 ### Data Models
 - `LotteryGame`: Contains game metadata and historical draws
-- `LotteryDraw`: Individual draw with date and winning numbers
+- `LotteryDraw`: Individual draw with date, winning numbers, `bonusNumber` (the bonus ball, e.g. Powerball/Mega Ball) and a separate nullable `multiplier` (Power Play/Megaplier). The models jar is consumed by lotto-options-core, so model changes must stay additive: keep `serialVersionUID` pinned and fields nullable
 - Response models for API endpoints
 
 ## API Endpoints
@@ -114,17 +114,18 @@ docker-compose up
 - Louisiana lottery support is commented out in configuration
 - Automated tests:
   - `lottery-result-persistence-server/src/test` — `LotteryDataServiceTest` exercises the real `LotteryDataService` against a temp `base-dir`, covering the `drawPositionCount` catalog path (v1 and v2), full game reads, missing-game handling, and case-insensitive state-name resolution
-  - `lottery-result-aggregator/src/test` — `LotteryGameSerializerTest` covers the atomic .ser write (readable output, in-place overwrite, no orphaned temp files)
+  - `lottery-result-aggregator/src/test` — `LotteryGameSerializerTest` covers the atomic .ser write (readable output, in-place overwrite, no orphaned temp files); `TexasLotteryHistoryProcessorTest` runs real Texas CSV rows through the real reader, processor and serializer (row layouts, empty multipliers, rejected rows, repair on re-poll); `LotteryResultPollingServiceTest` covers the three-way poll summary
   - Run them with `mvn test`
 
 ## File Processing Logic
 
 The system processes different lottery game types with specific rules:
 - **Standard games** (Lotto Texas, Cash Five): Regular number sorting
-- **Bonus games** (Powerball, Mega Millions): Include bonus/powerball numbers
+- **Multi-state games** (Powerball, Mega Millions): fixed positions - white balls `data[4..8]`, bonus ball `data[9]`, multiplier `data[10]`, which is empty for Mega Millions since 2025-04-08 and Powerball 2012-01-18 to 2014-01-18
+- **Trailing-bonus games** (Texas Two Step): bonus ball is the last column
 - **Pick games** (Pick 3, Daily 4): Include fireball numbers, no sorting
 
-Each processor handles CSV parsing, date formatting, and number extraction based on the specific lottery format.
+Each processor handles CSV parsing, date formatting, and number extraction based on the specific lottery format. In the Texas processor the game-to-layout mapping is `TexasLotteryHistoryProcessor.RowLayout`; an unmapped game name fails the game instead of being silently skipped.
 
 ## Maintaining this file
 
